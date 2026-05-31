@@ -1,6 +1,6 @@
-// CareTable - Premium UI/UX Multi-Page Logic Engine (Version 3.0)
+// CareTable - Bulletproof Logic Engine (Version 3.1)
 
-// 1. Database of Default Mock Data (Instantly populates dashboard, verification, and profiles)
+// Database of Default Mock Data
 const defaultMembers = {
     child: [
         { id: 101, name: "김민수", age: "5세 / 남", type: "알레르기", detail: "달걀, 우유", instruction: "달걀말이 대신 두부구이, 요구르트 대신 오렌지주스로 전면 대체 배식 필요", status: "care" },
@@ -18,7 +18,6 @@ const defaultMembers = {
     ]
 };
 
-// Database of Mock Diets for Slider Navigation
 const defaultDiets = [
     {
         date: "2026.06.01 (월) 중식",
@@ -83,7 +82,6 @@ const defaultDiets = [
     }
 ];
 
-// Database of Mock Food Recalls
 const defaultRecalls = [
     { brand: "OO식품 제조", food: "해물믹스", type: "회수", reason: "금속성 이물질 검출 및 세균 기준치 초과 가능성", date: "2026.05.28" },
     { brand: "△△푸드", food: "국산 콩나물", type: "주의", reason: "보존제(이산화황) 허용 기준치 미량 초과 검출", date: "2026.05.27" },
@@ -93,7 +91,6 @@ const defaultRecalls = [
     { brand: "대자연푸드", food: "도토리묵", type: "회수", reason: "잔류 농약 기준 미달 원재료 사용 회수 조치", date: "2026.05.10" }
 ];
 
-// Database of Mock Logs for reports
 const defaultLogs = [
     { date: "2026.05.29", menu: "귀리잡곡밥, 저나트륨 버섯국, 연두부구이, 깍두기, 약콩 두유", facility: "senior", target: "최옥분(당뇨), 이명자(유당)", alternative: "쌀밥 ➔ 귀리잡곡밥, 요플레 ➔ 두유 대체", guideline: "당뇨/유당불내증 전용 대체 식단 조립", vlmStatus: "PASS", timestamp: "2026.05.29 11:55" },
     { date: "2026.05.28", menu: "쌀밥, 두부구이, 오징어채무침, 맑은 무국, 오렌지주스", facility: "child", target: "김민수(달걀/우유)", alternative: "달걀말이 ➔ 두부구이, 요구르트 ➔ 주스 대체", guideline: "식재료 라벨 점검 및 조리기구 세척", vlmStatus: "PASS", timestamp: "2026.05.28 12:02" }
@@ -102,20 +99,18 @@ const defaultLogs = [
 // Global State
 const state = {
     currentTab: 'dashboard',
-    currentMode: 'agency', // 'agency' (기관) or 'family' (가정)
-    currentFacility: 'child', // 'child' (튼튼어린이집) or 'senior' (행복실버요양원)
-    members: JSON.parse(JSON.stringify(defaultMembers)), // Deep Copy
+    currentMode: 'agency', 
+    currentFacility: 'child', 
+    members: JSON.parse(JSON.stringify(defaultMembers)), 
     logs: JSON.parse(JSON.stringify(defaultLogs)),
     
-    // Page states
-    selectedUserId: 101, // 김민수
-    selectedMealIndex: 0, // Date slider index
-    selectedVlmImage: null, // 'normal' or 'alternative' or 'custom'
+    selectedUserId: 101, 
+    selectedMealIndex: 0, 
+    selectedVlmImage: null, 
     customVlmImageSrc: null,
     vlmApproved: false,
     recallSearchQuery: '',
     
-    // Charts database
     charts: {
         dashboard: null,
         statsDoughnut: null,
@@ -124,7 +119,6 @@ const state = {
     }
 };
 
-// API settings configuration
 const apiConfig = {
     key: localStorage.getItem('OPENROUTER_API') || '',
     model: localStorage.getItem('caremeal_api_model') || 'nvidia/llama-3.1-nemotron-70b-instruct:free'
@@ -144,10 +138,9 @@ const freeVLMModels = [
     "meta-llama/llama-3.2-11b-vision-instruct:free"
 ];
 
-// DOM Elements
+// Cache DOM Elements
 let elements = {};
 
-// Initial setup
 document.addEventListener('DOMContentLoaded', () => {
     cacheDomElements();
     loadDatabase();
@@ -168,7 +161,6 @@ document.addEventListener('DOMContentLoaded', () => {
     updateApiStatusUI();
 });
 
-// Cache elements to improve performance
 function cacheDomElements() {
     elements = {
         navButtons: document.querySelectorAll('.nav-btn'),
@@ -189,7 +181,6 @@ function cacheDomElements() {
         userDisplayName: document.getElementById('user-display-name'),
         userDisplayRole: document.getElementById('user-display-role'),
         
-        // Dashboard Stats
         statTotalMembers: document.getElementById('stat-total-members'),
         statDietCheckCount: document.getElementById('stat-diet-check-count'),
         statRiskAlerts: document.getElementById('stat-risk-alerts'),
@@ -197,7 +188,6 @@ function cacheDomElements() {
         lblTotalDesc: document.getElementById('lbl-total-desc'),
         dashboardApplyAltBtn: document.getElementById('dashboard-apply-alt-btn'),
         
-        // Diet Analyzer
         dietBulkInput: document.getElementById('diet-bulk-input'),
         analyzeDietBtn: document.getElementById('analyze-diet-btn'),
         analyzerLoading: document.getElementById('analyzer-loading'),
@@ -212,7 +202,6 @@ function cacheDomElements() {
         confirmAllDietBtn: document.getElementById('confirm-all-diet-btn'),
         exampleTags: document.querySelectorAll('.example-tag'),
 
-        // Diet Verification
         btnPrevMeal: document.getElementById('btn-prev-meal'),
         btnNextMeal: document.getElementById('btn-next-meal'),
         selectedMealLabel: document.getElementById('selected-meal-label'),
@@ -221,7 +210,6 @@ function cacheDomElements() {
         applyAlternativeDietBtn: document.getElementById('apply-alternative-diet-btn'),
         vAlternativeBox: document.getElementById('v-alternative-box'),
         
-        // VLM Scanner
         vlmOptNormal: document.getElementById('sim-opt-normal'),
         vlmOptAlternative: document.getElementById('sim-opt-alternative'),
         vlmTargetImage: document.getElementById('vlm-target-image'),
@@ -242,14 +230,12 @@ function cacheDomElements() {
         triggerFileBtn: document.getElementById('trigger-file-btn'),
         vlmFileInput: document.getElementById('vlm-file-input'),
 
-        // Ingredient Safety
         safetySearchInput: document.getElementById('safety-search-input'),
         btnSearchSafety: document.getElementById('btn-search-safety'),
         recallTableBody: document.getElementById('recall-table-body'),
         btnLoadMoreRecalls: document.getElementById('btn-load-more-recalls'),
         recallTotalBadge: document.getElementById('recall-total-badge'),
 
-        // User Custom Care
         customUserPickerContainer: document.getElementById('custom-user-picker-container'),
         customTabBtns: document.querySelectorAll('.custom-tab-btn'),
         subtabWarnings: document.getElementById('subtab-warnings'),
@@ -268,12 +254,10 @@ function cacheDomElements() {
         historyTimelineContainer: document.getElementById('history-timeline-container'),
         panelMemberTitle: document.getElementById('panel-member-title'),
 
-        // Statistics
         statsDateStart: document.getElementById('stats-date-start'),
         statsDateEnd: document.getElementById('stats-date-end'),
         btnStatsSearch: document.getElementById('btn-stats-search'),
 
-        // Report Generator
         reportSubTabBtns: document.querySelectorAll('.sub-tab-btn'),
         reportDocTitle: document.getElementById('report-doc-title'),
         rFacilityName: document.getElementById('r-facility-name'),
@@ -289,7 +273,6 @@ function cacheDomElements() {
         esgTime: document.getElementById('esg-time'),
         esgLocal: document.getElementById('esg-local'),
 
-        // Modals & Forms
         addMemberBtn: document.getElementById('add-member-btn'),
         addMemberModal: document.getElementById('add-member-modal'),
         closeMemberModalBtn: document.getElementById('close-member-modal-btn'),
@@ -304,22 +287,41 @@ function cacheDomElements() {
     };
 }
 
-// Local Storage database loader
 function loadDatabase() {
-    ['child', 'senior', 'family'].forEach(key => {
-        const stored = localStorage.getItem(`caremeal_members_${key}`);
-        if (stored && JSON.parse(stored).length > 0) {
-            state.members[key] = JSON.parse(stored);
-        } else {
-            saveDatabase(key);
-        }
-    });
+    try {
+        ['child', 'senior', 'family'].forEach(key => {
+            const stored = localStorage.getItem(`caremeal_members_${key}`);
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    state.members[key] = parsed;
+                } else {
+                    saveDatabase(key);
+                }
+            } else {
+                saveDatabase(key);
+            }
+        });
+    } catch (e) {
+        console.error('Database parse error:', e);
+        localStorage.clear();
+        state.members = JSON.parse(JSON.stringify(defaultMembers));
+        saveDatabase('child');
+        saveDatabase('senior');
+        saveDatabase('family');
+    }
 
-    const storedLogs = localStorage.getItem('caremeal_logs');
-    if (storedLogs) {
-        state.logs = JSON.parse(storedLogs);
-    } else {
-        localStorage.setItem('caremeal_logs', JSON.stringify(state.logs));
+    try {
+        const storedLogs = localStorage.getItem('caremeal_logs');
+        if (storedLogs) {
+            state.logs = JSON.parse(storedLogs);
+        } else {
+            localStorage.setItem('caremeal_logs', JSON.stringify(state.logs));
+        }
+    } catch (e) {
+        console.error('Logs parse error:', e);
+        state.logs = JSON.parse(JSON.stringify(defaultLogs));
+        saveLogs();
     }
 }
 
@@ -331,8 +333,9 @@ function saveLogs() {
     localStorage.setItem('caremeal_logs', JSON.stringify(state.logs));
 }
 
-// Theme Manager
 function initThemeManager() {
+    if (!elements.themeToggleBtn) return;
+    
     const storedTheme = localStorage.getItem('caremeal_theme') || 'light';
     applyTheme(storedTheme);
 
@@ -345,26 +348,26 @@ function initThemeManager() {
 }
 
 function applyTheme(theme) {
-    const icon = elements.themeToggleBtn.querySelector('i');
+    const icon = elements.themeToggleBtn ? elements.themeToggleBtn.querySelector('i') : null;
     
     if (theme === 'dark') {
         document.body.classList.add('dark-mode');
-        icon.className = 'fa-solid fa-sun';
-        elements.themeToggleText.textContent = '라이트 모드';
+        if (icon) icon.className = 'fa-solid fa-sun';
+        if (elements.themeToggleText) elements.themeToggleText.textContent = '라이트 모드';
     } else {
         document.body.classList.remove('dark-mode');
-        icon.className = 'fa-solid fa-moon';
-        elements.themeToggleText.textContent = '다크 모드';
+        if (icon) icon.className = 'fa-solid fa-moon';
+        if (elements.themeToggleText) elements.themeToggleText.textContent = '다크 모드';
     }
     
-    // Redraw charts if active
     setTimeout(() => {
         updateCharts();
     }, 100);
 }
 
-// Mode switching: Agency vs Family
 function initModeToggler() {
+    if (!elements.modeToggleCheckbox) return;
+
     const storedMode = localStorage.getItem('caremeal_mode');
     if (storedMode) {
         state.currentMode = storedMode;
@@ -378,13 +381,10 @@ function initModeToggler() {
         localStorage.setItem('caremeal_mode', state.currentMode);
         
         applyModeTheme();
-        
-        // Reset inputs and routing
         resetVlmUI();
         
-        // Reset selected user based on active mode
         const listKey = state.currentMode === 'family' ? 'family' : state.currentFacility;
-        if (state.members[listKey].length > 0) {
+        if (state.members[listKey] && state.members[listKey].length > 0) {
             state.selectedUserId = state.members[listKey][0].id;
         }
         
@@ -394,38 +394,44 @@ function initModeToggler() {
 }
 
 function applyModeTheme() {
+    const modeLeft = elements.modeTextLeft;
+    const modeRight = elements.modeTextRight;
+    
     if (state.currentMode === 'family') {
-        elements.modeTextLeft.classList.remove('active-mode');
-        elements.modeTextRight.classList.add('active-mode');
-        elements.facilitySelectorWrapper.classList.add('hidden');
-        elements.mainBadge.textContent = '일반 소비자 모드';
-        elements.mainBadge.style.background = 'rgba(124, 58, 237, 0.08)';
-        elements.mainBadge.style.borderColor = 'rgba(124, 58, 237, 0.2)';
-        elements.mainBadge.style.color = '#7c3aed';
+        if (modeLeft) modeLeft.classList.remove('active-mode');
+        if (modeRight) modeRight.classList.add('active-mode');
+        if (elements.facilitySelectorWrapper) elements.facilitySelectorWrapper.classList.add('hidden');
+        if (elements.mainBadge) {
+            elements.mainBadge.textContent = '일반 소비자 모드';
+            elements.mainBadge.style.background = 'rgba(124, 58, 237, 0.08)';
+            elements.mainBadge.style.borderColor = 'rgba(124, 58, 237, 0.2)';
+            elements.mainBadge.style.color = '#7c3aed';
+        }
         
-        elements.userAvatarInitial.textContent = '가';
-        elements.userDisplayName.textContent = '서교동 삼총사';
-        elements.userDisplayRole.textContent = '가정 자율 영양 케어';
-        
-        elements.navReportBtn.innerHTML = '<i class="fa-solid fa-file-invoice"></i> <span>안전 증빙 일지</span>';
+        if (elements.userAvatarInitial) elements.userAvatarInitial.textContent = '가';
+        if (elements.userDisplayName) elements.userDisplayName.textContent = '서교동 삼총사';
+        if (elements.userDisplayRole) elements.userDisplayRole.textContent = '가정 자율 영양 케어';
+        if (elements.navReportBtn) elements.navReportBtn.innerHTML = '<i class="fa-solid fa-file-invoice"></i> <span>안전 증빙 일지</span>';
     } else {
-        elements.modeTextLeft.classList.add('active-mode');
-        elements.modeTextRight.classList.remove('active-mode');
-        elements.facilitySelectorWrapper.classList.remove('hidden');
-        elements.mainBadge.textContent = '게스트 기관 모드';
-        elements.mainBadge.style.background = 'rgba(37, 99, 235, 0.08)';
-        elements.mainBadge.style.borderColor = 'rgba(37, 99, 235, 0.2)';
-        elements.mainBadge.style.color = 'var(--color-blue)';
+        if (modeLeft) modeLeft.classList.add('active-mode');
+        if (modeRight) modeRight.classList.remove('active-mode');
+        if (elements.facilitySelectorWrapper) elements.facilitySelectorWrapper.classList.remove('hidden');
+        if (elements.mainBadge) {
+            elements.mainBadge.textContent = '게스트 기관 모드';
+            elements.mainBadge.style.background = 'rgba(37, 99, 235, 0.08)';
+            elements.mainBadge.style.borderColor = 'rgba(37, 99, 235, 0.2)';
+            elements.mainBadge.style.color = 'var(--color-blue)';
+        }
         
-        elements.userAvatarInitial.textContent = '복';
-        elements.userDisplayName.textContent = '박아름 사회복지사';
-        elements.userDisplayRole.textContent = '마포구 시설 운영대표';
-        elements.navReportBtn.innerHTML = '<i class="fa-solid fa-file-shield"></i> <span>평가 증빙 & ESG</span>';
+        if (elements.userAvatarInitial) elements.userAvatarInitial.textContent = '복';
+        if (elements.userDisplayName) elements.userDisplayName.textContent = '박아름 사회복지사';
+        if (elements.userDisplayRole) elements.userDisplayRole.textContent = '마포구 시설 운영대표';
+        if (elements.navReportBtn) elements.navReportBtn.innerHTML = '<i class="fa-solid fa-file-shield"></i> <span>평가 증빙 & ESG</span>';
     }
 }
 
-// Tab routing system
 function initTabs() {
+    if (!elements.navButtons) return;
     elements.navButtons.forEach(btn => {
         btn.addEventListener('click', () => {
             const tabId = btn.getAttribute('data-tab');
@@ -437,25 +443,28 @@ function initTabs() {
 function switchTab(tabId) {
     state.currentTab = tabId;
     
-    elements.navButtons.forEach(btn => {
-        if (btn.getAttribute('data-tab') === tabId) {
-            btn.classList.add('active');
-        } else {
-            btn.classList.remove('active');
-        }
-    });
+    if (elements.navButtons) {
+        elements.navButtons.forEach(btn => {
+            if (btn.getAttribute('data-tab') === tabId) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+    }
 
-    elements.tabContents.forEach(content => {
-        if (content.id === tabId) {
-            content.classList.add('active-tab');
-        } else {
-            content.classList.remove('active-tab');
-        }
-    });
+    if (elements.tabContents) {
+        elements.tabContents.forEach(content => {
+            if (content.id === tabId) {
+                content.classList.add('active-tab');
+            } else {
+                content.classList.remove('active-tab');
+            }
+        });
+    }
 
     updateHeaderTitles(tabId);
     
-    // Page-specific render trigger
     if (tabId === 'dashboard') {
         renderDashboard();
     } else if (tabId === 'diet-verification') {
@@ -477,55 +486,56 @@ function updateHeaderTitles(tabId) {
         modeTitle = state.currentFacility === 'child' ? '튼튼어린이집' : '행복실버요양원';
     }
     
-    switch (tabId) {
-        case 'dashboard':
-            elements.pageMainTitle.textContent = `${modeTitle} 종합 대시보드`;
-            elements.pageSubTitle.textContent = '급식소 실시간 급식 안전성 및 영양 관리 요약';
-            break;
-        case 'diet-analyzer':
-            elements.pageMainTitle.textContent = '식단 AI 분석';
-            elements.pageSubTitle.textContent = '식단을 대량 입력하면 OpenRouter AI가 수혜자 DB와 실시간 스크리닝 분석을 시행합니다.';
-            break;
-        case 'diet-verification':
-            elements.pageMainTitle.textContent = '식단 검증';
-            elements.pageSubTitle.textContent = '지정 일자별 급식 위험요소 2차 비전 검증 및 대체식 영양 개선 분석';
-            break;
-        case 'ingredient-safety':
-            elements.pageMainTitle.textContent = '식재료 안전 모니터링';
-            elements.pageSubTitle.textContent = '식품의약품안전처 위해 및 회수 식품 표준 정보 실시간 동기화 검색';
-            break;
-        case 'user-custom-mgmt':
-            elements.pageMainTitle.textContent = '이용자 맞춤 관리';
-            elements.pageSubTitle.textContent = '사회보장정보 기반 집중 식이 케어 대상자 맞춤 지침 및 주의 정보';
-            break;
-        case 'stats-report':
-            elements.pageMainTitle.textContent = '통계 리포트';
-            elements.pageSubTitle.textContent = '검출된 급식 위해 정보 통계 및 기간별 위험 알림 유형 분석';
-            break;
-        case 'report-generator':
-            elements.pageMainTitle.textContent = state.currentMode === 'family' ? '가정 식단 위생 일지' : '평가 증빙 및 ESG 센터';
-            elements.pageSubTitle.textContent = '한국사회보장정보원 시스템 증빙 양식 출력 및 디지털 친환경 행정 지표 요약';
-            break;
-        case 'service-flow':
-            elements.pageMainTitle.textContent = '서비스 개요';
-            elements.pageSubTitle.textContent = 'CareTable의 실시간 AI 급식 영양 안전 서비스 작동 구조도 및 민간 협업 인프라';
-            break;
-        case 'settings':
-            elements.pageMainTitle.textContent = '설정 및 관리';
-            elements.pageSubTitle.textContent = '시스템 매개변수 조정, 테마 스위칭, API 연동 Key 관리';
-            break;
+    if (elements.pageMainTitle) {
+        switch (tabId) {
+            case 'dashboard':
+                elements.pageMainTitle.textContent = `${modeTitle} 종합 대시보드`;
+                if (elements.pageSubTitle) elements.pageSubTitle.textContent = '급식소 실시간 급식 안전성 및 영양 관리 요약';
+                break;
+            case 'diet-analyzer':
+                elements.pageMainTitle.textContent = '식단 AI 분석';
+                if (elements.pageSubTitle) elements.pageSubTitle.textContent = '식단을 대량 입력하면 OpenRouter AI가 수혜자 DB와 실시간 스크리닝 분석을 시행합니다.';
+                break;
+            case 'diet-verification':
+                elements.pageMainTitle.textContent = '식단 검증';
+                if (elements.pageSubTitle) elements.pageSubTitle.textContent = '지정 일자별 급식 위험요소 2차 비전 검증 및 대체식 영양 개선 분석';
+                break;
+            case 'ingredient-safety':
+                elements.pageMainTitle.textContent = '식재료 안전 모니터링';
+                if (elements.pageSubTitle) elements.pageSubTitle.textContent = '식품의약품안전처 위해 및 회수 식품 표준 정보 실시간 동기화 검색';
+                break;
+            case 'user-custom-mgmt':
+                elements.pageMainTitle.textContent = '이용자 맞춤 관리';
+                if (elements.pageSubTitle) elements.pageSubTitle.textContent = '사회보장정보 기반 집중 식이 케어 대상자 맞춤 지침 및 주의 정보';
+                break;
+            case 'stats-report':
+                elements.pageMainTitle.textContent = '통계 리포트';
+                if (elements.pageSubTitle) elements.pageSubTitle.textContent = '검출된 급식 위해 정보 통계 및 기간별 위험 알림 유형 분석';
+                break;
+            case 'report-generator':
+                elements.pageMainTitle.textContent = state.currentMode === 'family' ? '가정 식단 위생 일지' : '평가 증빙 및 ESG 센터';
+                if (elements.pageSubTitle) elements.pageSubTitle.textContent = '한국사회보장정보원 시스템 증빙 양식 출력 및 디지털 친환경 행정 지표 요약';
+                break;
+            case 'service-flow':
+                elements.pageMainTitle.textContent = '서비스 개요';
+                if (elements.pageSubTitle) elements.pageSubTitle.textContent = 'CareTable의 실시간 AI 급식 영양 안전 서비스 작동 구조도 및 민간 협업 인프라';
+                break;
+            case 'settings':
+                elements.pageMainTitle.textContent = '설정 및 관리';
+                if (elements.pageSubTitle) elements.pageSubTitle.textContent = '시스템 매개변수 조정, 테마 스위칭, API 연동 Key 관리';
+                break;
+        }
     }
 }
 
-// Facility selection updates
 function initFacilitySelector() {
+    if (!elements.facilitySelect) return;
     elements.facilitySelect.addEventListener('change', (e) => {
         state.currentFacility = e.target.value;
         resetVlmUI();
         
-        // Reset selected user
         const listKey = state.currentFacility;
-        if (state.members[listKey].length > 0) {
+        if (state.members[listKey] && state.members[listKey].length > 0) {
             state.selectedUserId = state.members[listKey][0].id;
         }
         
@@ -534,135 +544,143 @@ function initFacilitySelector() {
     });
 }
 
-// Render Dashboard values and layout
 function renderDashboard() {
     const listKey = state.currentMode === 'family' ? 'family' : state.currentFacility;
     const list = state.members[listKey];
+    if (!list) return;
     
-    // Count stats
     const totalMembersCount = list.length;
     const riskCount = list.filter(m => m.type !== '일반').length;
     
-    elements.statTotalMembers.textContent = `${totalMembersCount}명`;
-    elements.statRiskAlerts.textContent = `${riskCount * 2}건`;
+    if (elements.statTotalMembers) elements.statTotalMembers.textContent = `${totalMembersCount}명`;
+    if (elements.statRiskAlerts) elements.statRiskAlerts.textContent = `${riskCount * 2}건`;
     
-    if (state.currentMode === 'family') {
-        elements.lblTotalMembers.textContent = '가족 인원';
-        elements.lblTotalDesc.innerHTML = '<i class="fa-solid fa-house"></i> 가정 프로필 기준';
-    } else {
-        elements.lblTotalMembers.textContent = '총 관리 대상자';
-        elements.lblTotalDesc.innerHTML = '<i class="fa-solid fa-circle-info"></i> 사보원 연동 기준';
+    if (elements.lblTotalMembers) {
+        if (state.currentMode === 'family') {
+            elements.lblTotalMembers.textContent = '가족 인원';
+            if (elements.lblTotalDesc) elements.lblTotalDesc.innerHTML = '<i class="fa-solid fa-house"></i> 가정 프로필 기준';
+        } else {
+            elements.lblTotalMembers.textContent = '총 관리 대상자';
+            if (elements.lblTotalDesc) elements.lblTotalDesc.innerHTML = '<i class="fa-solid fa-circle-info"></i> 사보원 연동 기준';
+        }
     }
     
-    // Render today's menu summary based on mode/facility
     const todayDietContainer = document.querySelector('.today-diet-list');
-    todayDietContainer.innerHTML = '';
-    
-    let activeMealSet = [];
-    if (state.currentMode === 'family') {
-        activeMealSet = [
-            { time: "조식", menu: "귀리밥, 계란말이, 된장국, 깍두기", tag: "주의 1건", color: "tag-yellow" },
-            { time: "중식", menu: "잡곡밥, 돈까스, 양배추 샐러드, 우유", tag: "주의 1건", color: "tag-yellow" },
-            { time: "석식", menu: "쌀밥, 버섯찌개, 계란찜, 시금치나물", tag: "정상", color: "tag-green" }
-        ];
-    } else if (state.currentFacility === 'child') {
-        activeMealSet = [
-            { time: "조식", menu: "잡곡밥, 근대된장국, 달걀찜, 깍두기", tag: "정상", color: "tag-green" },
-            { time: "중식", menu: "현미밥, 닭살야채볶음, 미역국, 배추김치", tag: "주의 1건", color: "tag-yellow" },
-            { time: "석식", menu: "보리밥, 두부조림, 시금치나물, 깍두기", tag: "정상", color: "tag-green" }
-        ];
-    } else {
-        activeMealSet = [
-            { time: "조식", menu: "귀리밥, 두부국, 시금치, 조기구이", tag: "정상", color: "tag-green" },
-            { time: "중식", menu: "귀리잡곡밥, 버섯국, 불고기, 고구마순나물, 약콩 두유", tag: "주의 2건", color: "tag-yellow" },
-            { time: "석식", menu: "귀리죽, 계란찜, 명란젓갈, 배추김치", tag: "주의 1건", color: "tag-yellow" }
-        ];
+    if (todayDietContainer) {
+        todayDietContainer.innerHTML = '';
+        
+        let activeMealSet = [];
+        if (state.currentMode === 'family') {
+            activeMealSet = [
+                { time: "조식", menu: "귀리밥, 계란말이, 된장국, 깍두기", tag: "주의 1건", color: "tag-yellow" },
+                { time: "중식", menu: "잡곡밥, 돈까스, 양배추 샐러드, 우유", tag: "주의 1건", color: "tag-yellow" },
+                { time: "석식", menu: "쌀밥, 버섯찌개, 계란찜, 시금치나물", tag: "정상", color: "tag-green" }
+            ];
+        } else if (state.currentFacility === 'child') {
+            activeMealSet = [
+                { time: "조식", menu: "잡곡밥, 근대된장국, 달걀찜, 깍두기", tag: "정상", color: "tag-green" },
+                { time: "중식", menu: "현미밥, 닭살야채볶음, 미역국, 배추김치", tag: "주의 1건", color: "tag-yellow" },
+                { time: "석식", menu: "보리밥, 두부조림, 시금치나물, 깍두기", tag: "정상", color: "tag-green" }
+            ];
+        } else {
+            activeMealSet = [
+                { time: "조식", menu: "귀리밥, 두부국, 시금치, 조기구이", tag: "정상", color: "tag-green" },
+                { time: "중식", menu: "귀리잡곡밥, 버섯국, 불고기, 고구마순나물, 약콩 두유", tag: "주의 2건", color: "tag-yellow" },
+                { time: "석식", menu: "귀리죽, 계란찜, 명란젓갈, 배추김치", tag: "주의 1건", color: "tag-yellow" }
+            ];
+        }
+        
+        activeMealSet.forEach(meal => {
+            const timeBadgeClass = meal.time === '조식' ? 'header-blue' : meal.time === '중식' ? 'header-orange' : 'header-purple';
+            const card = document.createElement('div');
+            card.className = 'today-diet-card glass-card';
+            card.innerHTML = `
+                <div class="diet-time-badge ${timeBadgeClass}">${meal.time}</div>
+                <div class="diet-menu-items">${meal.menu}</div>
+                <div class="diet-status-tag ${meal.color}">${meal.tag}</div>
+            `;
+            todayDietContainer.appendChild(card);
+        });
     }
-    
-    activeMealSet.forEach(meal => {
-        const timeBadgeClass = meal.time === '조식' ? 'header-blue' : meal.time === '중식' ? 'header-orange' : 'header-purple';
-        const card = document.createElement('div');
-        card.className = 'today-diet-card glass-card';
-        card.innerHTML = `
-            <div class="diet-time-badge ${timeBadgeClass}">${meal.time}</div>
-            <div class="diet-menu-items">${meal.menu}</div>
-            <div class="diet-status-tag ${meal.color}">${meal.tag}</div>
-        `;
-        todayDietContainer.appendChild(card);
-    });
 
-    // Handle dashboard alternative apply
-    elements.dashboardApplyAltBtn.onclick = () => {
-        showNotification("대체 식단 처방이 오늘의 식단에 즉시 적용되었습니다.");
-        switchTab('diet-verification');
-    };
+    if (elements.dashboardApplyAltBtn) {
+        elements.dashboardApplyAltBtn.onclick = () => {
+            showNotification("대체 식단 처방이 오늘의 식단에 즉시 적용되었습니다.");
+            switchTab('diet-verification');
+        };
+    }
 
-    // Draw donut
     setTimeout(() => {
         updateCharts();
     }, 100);
 }
 
-// Diet bulk analyzer init
 function initDietAnalyzer() {
+    if (!elements.dietBulkInput) return;
+
     elements.dietBulkInput.value = state.currentMode === 'family' 
         ? `[월요일] 쌀밥, 계란말이, 요구르트\n[화요일] 쌀식빵, 사과잼, 우유\n[수요일] 잡곡밥, 돈까스, 샐러드` 
         : `[월요일] 현미밥, 닭살야채볶음, 미역국, 배추김치\n[화요일] 쌀밥, 불고기, 된장찌개, 시금치나물\n[수요일] 잡곡밥, 생선구이, 계란찜, 요구르트`;
     
-    elements.exampleTags.forEach(tag => {
-        tag.addEventListener('click', () => {
-            elements.exampleTags.forEach(t => t.classList.remove('active'));
-            tag.classList.add('active');
-            const period = tag.getAttribute('data-period');
-            if (period === 'weekly') {
-                elements.dietBulkInput.value = `[월요일] 현미밥, 닭살야채볶음, 미역국, 배추김치\n[화요일] 쌀밥, 불고기, 된장찌개, 시금치나물\n[수요일] 잡곡밥, 생선구이, 계란찜, 요구르트`;
-            } else {
-                elements.dietBulkInput.value = `[1주 월요일] 현미밥, 닭살야채볶음, 미역국, 배추김치\n[1주 화요일] 쌀밥, 불고기, 된장찌개, 시금치나물\n[1주 수요일] 잡곡밥, 생선구이, 계란찜, 요구르트\n[1주 목요일] 보리밥, 오징어볶음, 콩나물국, 무피클\n[1주 금요일] 칼국수, 야채만두, 배추겉절이, 요구르트`;
+    if (elements.exampleTags) {
+        elements.exampleTags.forEach(tag => {
+            tag.addEventListener('click', () => {
+                elements.exampleTags.forEach(t => t.classList.remove('active'));
+                tag.classList.add('active');
+                const period = tag.getAttribute('data-period');
+                if (period === 'weekly') {
+                    elements.dietBulkInput.value = `[월요일] 현미밥, 닭살야채볶음, 미역국, 배추김치\n[화요일] 쌀밥, 불고기, 된장찌개, 시금치나물\n[수요일] 잡곡밥, 생선구이, 계란찜, 요구르트`;
+                } else {
+                    elements.dietBulkInput.value = `[1주 월요일] 현미밥, 닭살야채볶음, 미역국, 배추김치\n[1주 화요일] 쌀밥, 불고기, 된장찌개, 시금치나물\n[1주 수요일] 잡곡밥, 생선구이, 계란찜, 요구르트\n[1주 목요일] 보리밥, 오징어볶음, 콩나물국, 무피클\n[1주 금요일] 칼국수, 야채만두, 배추겉절이, 요구르트`;
+                }
+            });
+        });
+    }
+
+    if (elements.analyzeDietBtn) {
+        elements.analyzeDietBtn.addEventListener('click', async () => {
+            const textInput = elements.dietBulkInput.value.trim();
+            if (!textInput) return;
+            
+            if (elements.scheduleEmptyView) elements.scheduleEmptyView.classList.add('hidden');
+            if (elements.scheduleResultView) elements.scheduleResultView.classList.add('hidden');
+            if (elements.analyzerLoading) elements.analyzerLoading.classList.remove('hidden');
+            elements.analyzeDietBtn.disabled = true;
+            
+            if (elements.loadingText) {
+                elements.loadingText.textContent = apiConfig.key 
+                    ? "OpenRouter 임상 영양 분석 LLM 모델과 통신하여 알레르기 및 식습관 위험요소를 실시간 정밀 스크리닝 중입니다..."
+                    : "인터넷 및 API Key 비검출로 인하여 로컬 영양 성분 교차 대조 알고리즘으로 폴백하여 식단을 분석하고 처방하는 중...";
+            }
+
+            try {
+                if (apiConfig.key) {
+                    const parsedResult = await callOpenRouterLLM(textInput);
+                    renderAnalyzedSchedule(parsedResult);
+                } else {
+                    await new Promise(resolve => setTimeout(resolve, 1200));
+                    renderAnalyzedSchedule(defaultDiets);
+                }
+                showNotification("AI 식단 분석 및 대체식 처방 수립이 완료되었습니다.");
+            } catch (error) {
+                console.error(error);
+                showNotification("AI 모델 호출 실패로 로컬 안전 가이드 데이터를 로드합니다.");
+                renderAnalyzedSchedule(defaultDiets);
+            } finally {
+                if (elements.analyzerLoading) elements.analyzerLoading.classList.add('hidden');
+                elements.analyzeDietBtn.disabled = false;
             }
         });
-    });
+    }
 
-    elements.analyzeDietBtn.addEventListener('click', async () => {
-        const textInput = elements.dietBulkInput.value.trim();
-        if (!textInput) return;
-        
-        elements.scheduleEmptyView.classList.add('hidden');
-        elements.scheduleResultView.classList.add('hidden');
-        elements.analyzerLoading.classList.remove('hidden');
-        elements.analyzeDietBtn.disabled = true;
-        
-        elements.loadingText.textContent = apiConfig.key 
-            ? "OpenRouter 임상 영양 분석 LLM 모델과 통신하여 알레르기 및 식습관 위험요소를 실시간 정밀 스크리닝 중입니다..."
-            : "인터넷 및 API Key 비검출로 인하여 로컬 영양 성분 교차 대조 알고리즘으로 폴백하여 식단을 분석하고 처방하는 중...";
-
-        try {
-            if (apiConfig.key) {
-                const parsedResult = await callOpenRouterLLM(textInput);
-                renderAnalyzedSchedule(parsedResult);
-            } else {
-                await new Promise(resolve => setTimeout(resolve, 1500));
-                // Load default matching
-                renderAnalyzedSchedule(defaultDiets);
-            }
-            
-            showNotification("AI 식단 분석 및 대체식 처방 수립이 완료되었습니다.");
-        } catch (error) {
-            console.error(error);
-            showNotification("AI 모델 호출 실패로 로컬 안전 가이드 데이터를 로드합니다.");
-            renderAnalyzedSchedule(defaultDiets);
-        } finally {
-            elements.analyzerLoading.classList.add('hidden');
-            elements.analyzeDietBtn.disabled = false;
-        }
-    });
-
-    elements.confirmAllDietBtn.addEventListener('click', () => {
-        showNotification("대체 식단 처방 수칙이 식단 검증 시스템에 최종 동기화되었습니다. 배식 검증 단계를 수행하십시오.");
-        switchTab('diet-verification');
-    });
+    if (elements.confirmAllDietBtn) {
+        elements.confirmAllDietBtn.addEventListener('click', () => {
+            showNotification("대체 식단 처방 수칙이 식단 검증 시스템에 최종 동기화되었습니다. 배식 검증 단계를 수행하십시오.");
+            switchTab('diet-verification');
+        });
+    }
 }
 
-// Call OpenRouter
 async function callOpenRouterLLM(dietText) {
     const listKey = state.currentMode === 'family' ? 'family' : state.currentFacility;
     const list = state.members[listKey];
@@ -686,15 +704,15 @@ JSON Array format:
   {
     "date": "요일/일자 구분 (예: 2026.06.01 (월) 중식)",
     "menu": [
-      { "name": "식품명 (예: 현미밥)", "weight": "대략적인 권장 중량 (예: 210g)" }
+      { "name": "식품명", "weight": "권장 중량" }
     ],
     "results": [
-      { "num": 1, "type": "알레르기", "title": "위험 분류 요약", "desc": "위험 대상 및 상세 설명", "status": "danger 또는 warning 또는 info" }
+      { "num": 1, "type": "알레르기", "title": "위험 분류 요약", "desc": "위험 대상 및 상세 설명", "status": "danger" }
     ],
     "alternative": {
       "from": "제한할 식단명",
       "to": "대체 처방 식단명",
-      "effect": "나트륨/칼로리/알러지원 등 개선 효과 서술"
+      "effect": "개선 효과 서술"
     }
   }
 ]
@@ -742,8 +760,8 @@ JSON Array format:
     throw new Error("API failures");
 }
 
-// Render schedule cards
 function renderAnalyzedSchedule(results) {
+    if (!elements.scheduleCardsContainer) return;
     elements.scheduleCardsContainer.innerHTML = '';
     
     results.forEach((item, idx) => {
@@ -807,154 +825,164 @@ function renderAnalyzedSchedule(results) {
         const content = document.getElementById(`accordion-${index}`);
         const arrow = document.getElementById(`arrow-${index}`);
         
-        if (content.classList.contains('expanded')) {
+        if (content && content.classList.contains('expanded')) {
             content.classList.remove('expanded');
-            arrow.classList.remove('rotate-icon');
-        } else {
+            if (arrow) arrow.classList.remove('rotate-icon');
+        } else if (content) {
             content.classList.add('expanded');
-            arrow.classList.add('rotate-icon');
+            if (arrow) arrow.classList.add('rotate-icon');
         }
     };
 
-    elements.scheduleResultView.classList.remove('hidden');
+    if (elements.scheduleResultView) elements.scheduleResultView.classList.remove('hidden');
 }
 
-// Diet Verification slider
 function initDietVerification() {
-    elements.btnPrevMeal.addEventListener('click', () => {
-        if (state.selectedMealIndex > 0) {
-            state.selectedMealIndex--;
-            renderDietVerification();
-        }
-    });
-
-    elements.btnNextMeal.addEventListener('click', () => {
-        if (state.selectedMealIndex < defaultDiets.length - 1) {
-            state.selectedMealIndex++;
-            renderDietVerification();
-        }
-    });
-
-    elements.applyAlternativeDietBtn.addEventListener('click', () => {
-        const diet = defaultDiets[state.selectedMealIndex];
-        showNotification(`[${diet.alternative.from}]이 [${diet.alternative.to}]으로 안전 대체 적용되었습니다.`);
-        
-        // Update local memory
-        diet.menu = diet.menu.map(food => {
-            if (food.name === diet.alternative.from) {
-                return { name: diet.alternative.to, weight: food.weight };
+    if (elements.btnPrevMeal) {
+        elements.btnPrevMeal.addEventListener('click', () => {
+            if (state.selectedMealIndex > 0) {
+                state.selectedMealIndex--;
+                renderDietVerification();
             }
-            return food;
         });
-        
-        // Remove allergy danger log
-        diet.results = diet.results.filter(r => r.type !== '알레르기');
-        
-        renderDietVerification();
-        renderDashboard();
-    });
+    }
 
-    // VLM Plate photo simulator triggers
-    elements.vlmOptNormal.addEventListener('click', () => {
-        selectVlmImage('normal');
-    });
-    elements.vlmOptAlternative.addEventListener('click', () => {
-        selectVlmImage('alternative');
-    });
+    if (elements.btnNextMeal) {
+        elements.btnNextMeal.addEventListener('click', () => {
+            if (state.selectedMealIndex < defaultDiets.length - 1) {
+                state.selectedMealIndex++;
+                renderDietVerification();
+            }
+        });
+    }
+
+    if (elements.applyAlternativeDietBtn) {
+        elements.applyAlternativeDietBtn.addEventListener('click', () => {
+            const diet = defaultDiets[state.selectedMealIndex];
+            showNotification(`[${diet.alternative.from}]이 [${diet.alternative.to}]으로 안전 대체 적용되었습니다.`);
+            
+            diet.menu = diet.menu.map(food => {
+                if (food.name === diet.alternative.from) {
+                    return { name: diet.alternative.to, weight: food.weight };
+                }
+                return food;
+            });
+            
+            diet.results = diet.results.filter(r => r.type !== '알레르기');
+            renderDietVerification();
+            renderDashboard();
+        });
+    }
+
+    if (elements.vlmOptNormal) {
+        elements.vlmOptNormal.addEventListener('click', () => {
+            selectVlmImage('normal');
+        });
+    }
+    if (elements.vlmOptAlternative) {
+        elements.vlmOptAlternative.addEventListener('click', () => {
+            selectVlmImage('alternative');
+        });
+    }
     
-    elements.triggerFileBtn.addEventListener('click', () => {
-        elements.vlmFileInput.click();
-    });
+    if (elements.triggerFileBtn) {
+        elements.triggerFileBtn.addEventListener('click', () => {
+            if (elements.vlmFileInput) elements.vlmFileInput.click();
+        });
+    }
 
-    elements.vlmFileInput.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
+    if (elements.vlmFileInput) {
+        elements.vlmFileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
 
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            state.customVlmImageSrc = event.target.result;
-            selectVlmImage('custom');
-        };
-        reader.readAsDataURL(file);
-    });
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                state.customVlmImageSrc = event.target.result;
+                selectVlmImage('custom');
+            };
+            reader.readAsDataURL(file);
+        });
+    }
 
-    // Run VLM click
-    elements.runVlmBtn.addEventListener('click', async () => {
-        if (!state.selectedVlmImage) return;
-        
-        elements.vlmEmptyResult.classList.add('hidden');
-        elements.vlmResultPanel.classList.add('hidden');
-        elements.scannerLaser.style.display = 'block';
-        elements.scannerLaser.style.animation = 'scan 2s infinite linear';
-        elements.runVlmBtn.disabled = true;
+    if (elements.runVlmBtn) {
+        elements.runVlmBtn.addEventListener('click', async () => {
+            if (!state.selectedVlmImage) return;
+            
+            if (elements.vlmEmptyResult) elements.vlmEmptyResult.classList.add('hidden');
+            if (elements.vlmResultPanel) elements.vlmResultPanel.classList.add('hidden');
+            if (elements.scannerLaser) {
+                elements.scannerLaser.style.display = 'block';
+                elements.scannerLaser.style.animation = 'scan 2s infinite linear';
+            }
+            elements.runVlmBtn.disabled = true;
 
-        try {
-            if (apiConfig.key && (state.selectedVlmImage === 'custom' || state.customVlmImageSrc)) {
-                // Call actual VLM
-                const visionResult = await callOpenRouterVLM();
+            try {
+                if (apiConfig.key && (state.selectedVlmImage === 'custom' || state.customVlmImageSrc)) {
+                    const visionResult = await callOpenRouterVLM();
+                    setTimeout(() => {
+                        if (elements.scannerLaser) elements.scannerLaser.style.display = 'none';
+                        elements.runVlmBtn.disabled = false;
+                        renderVlmResult(visionResult);
+                    }, 2000);
+                } else {
+                    setTimeout(() => {
+                        if (elements.scannerLaser) elements.scannerLaser.style.display = 'none';
+                        elements.runVlmBtn.disabled = false;
+                        renderVlmSimulationResult();
+                    }, 2000);
+                }
+            } catch (error) {
+                console.error(error);
+                showNotification("VLM 모델 응답 지연으로 로컬 인공지능 검증 결과를 표시합니다.");
                 setTimeout(() => {
-                    elements.scannerLaser.style.display = 'none';
-                    elements.runVlmBtn.disabled = false;
-                    renderVlmResult(visionResult);
-                }, 2000);
-            } else {
-                // Simulation fallback
-                setTimeout(() => {
-                    elements.scannerLaser.style.display = 'none';
+                    if (elements.scannerLaser) elements.scannerLaser.style.display = 'none';
                     elements.runVlmBtn.disabled = false;
                     renderVlmSimulationResult();
-                }, 2000);
+                }, 1000);
             }
-        } catch (error) {
-            console.error(error);
-            showNotification("VLM 모델 응답 지연으로 로컬 인공지능 검증 결과를 표시합니다.");
-            setTimeout(() => {
-                elements.scannerLaser.style.display = 'none';
-                elements.runVlmBtn.disabled = false;
-                renderVlmSimulationResult();
-            }, 1000);
-        }
-    });
+        });
+    }
 }
 
 function selectVlmImage(type) {
     state.selectedVlmImage = type;
-    elements.vlmPlaceholder.classList.add('hidden');
-    elements.vlmTargetImage.classList.remove('hidden');
+    if (elements.vlmPlaceholder) elements.vlmPlaceholder.classList.add('hidden');
+    if (elements.vlmTargetImage) elements.vlmTargetImage.classList.remove('hidden');
     
-    elements.vlmOptNormal.classList.remove('selected');
-    elements.vlmOptAlternative.classList.remove('selected');
+    if (elements.vlmOptNormal) elements.vlmOptNormal.classList.remove('selected');
+    if (elements.vlmOptAlternative) elements.vlmOptAlternative.classList.remove('selected');
     
     if (type === 'normal') {
-        // Draw simulated placeholders or CSS styling
-        elements.vlmTargetImage.src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&q=80'; // Mock plate
-        elements.vlmOptNormal.classList.add('selected');
+        if (elements.vlmTargetImage) elements.vlmTargetImage.src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&q=80'; 
+        if (elements.vlmOptNormal) elements.vlmOptNormal.classList.add('selected');
     } else if (type === 'alternative') {
-        elements.vlmTargetImage.src = 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=400&q=80'; // Mock clean salad plate
-        elements.vlmOptAlternative.classList.add('selected');
+        if (elements.vlmTargetImage) elements.vlmTargetImage.src = 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=400&q=80'; 
+        if (elements.vlmOptAlternative) elements.vlmOptAlternative.classList.add('selected');
     } else if (type === 'custom' && state.customVlmImageSrc) {
-        elements.vlmTargetImage.src = state.customVlmImageSrc;
+        if (elements.vlmTargetImage) elements.vlmTargetImage.src = state.customVlmImageSrc;
     }
     
-    elements.runVlmBtn.disabled = false;
+    if (elements.runVlmBtn) elements.runVlmBtn.disabled = false;
 }
 
 function resetVlmUI() {
     state.selectedVlmImage = null;
     state.customVlmImageSrc = null;
     state.vlmApproved = false;
-    elements.vlmPlaceholder.classList.remove('hidden');
-    elements.vlmTargetImage.classList.add('hidden');
-    elements.vlmTargetImage.src = '';
-    elements.vlmOptNormal.classList.remove('selected');
-    elements.vlmOptAlternative.classList.remove('selected');
-    elements.vlmEmptyResult.classList.remove('hidden');
-    elements.vlmResultPanel.classList.add('hidden');
-    elements.runVlmBtn.disabled = true;
-    elements.vlmFileInput.value = '';
+    if (elements.vlmPlaceholder) elements.vlmPlaceholder.classList.remove('hidden');
+    if (elements.vlmTargetImage) {
+        elements.vlmTargetImage.classList.add('hidden');
+        elements.vlmTargetImage.src = '';
+    }
+    if (elements.vlmOptNormal) elements.vlmOptNormal.classList.remove('selected');
+    if (elements.vlmOptAlternative) elements.vlmOptAlternative.classList.remove('selected');
+    if (elements.vlmEmptyResult) elements.vlmEmptyResult.classList.remove('hidden');
+    if (elements.vlmResultPanel) elements.vlmResultPanel.classList.add('hidden');
+    if (elements.runVlmBtn) elements.runVlmBtn.disabled = true;
+    if (elements.vlmFileInput) elements.vlmFileInput.value = '';
 }
 
-// Call real OpenRouter Vision model
 async function callOpenRouterVLM() {
     const listKey = state.currentMode === 'family' ? 'family' : state.currentFacility;
     const list = state.members[listKey];
@@ -968,9 +996,9 @@ ${memberProfileStr}
 JSON Format:
 {
   "verdict": "PASS" 또는 "REJECT",
-  "allergen": "발견된 알레르기 유발 요소 상세 요약 또는 없음",
-  "portion": "정량 비율 평가 (예: 정량 98%)",
-  "reason": "AI Vision 이미지 식별 근거 설명"
+  "allergen": "발견된 유발 요인 요약 또는 없음",
+  "portion": "정량 비율 평가",
+  "reason": "AI Vision 이미지 판별 결과 설명"
 }
 `;
     const base64Image = state.customVlmImageSrc.split(',')[1];
@@ -1020,106 +1048,122 @@ JSON Format:
     throw new Error("VLM Failure");
 }
 
-// Render VLM Simulation Result
 function renderVlmSimulationResult() {
-    elements.vlmResultPanel.classList.remove('hidden');
-    elements.vlmEmptyResult.classList.add('hidden');
+    if (elements.vlmResultPanel) elements.vlmResultPanel.classList.remove('hidden');
+    if (elements.vlmEmptyResult) elements.vlmEmptyResult.classList.add('hidden');
     
     if (state.selectedVlmImage === 'normal') {
-        // Rejected normal plate containing allergen
-        elements.vlmVerdictBox.className = 'vlm-verdict-box rejected';
-        elements.verdictIconContainer.innerHTML = '<i class="fa-solid fa-circle-xmark"></i>';
-        elements.verdictTitle.textContent = '배식 보류 (REJECTED)';
+        if (elements.vlmVerdictBox) elements.vlmVerdictBox.className = 'vlm-verdict-box rejected';
+        if (elements.verdictIconContainer) elements.verdictIconContainer.innerHTML = '<i class="fa-solid fa-circle-xmark"></i>';
+        if (elements.verdictTitle) elements.verdictTitle.textContent = '배식 보류 (REJECTED)';
         
-        elements.vlmMatchRate.style.width = '70%';
-        elements.vlmMatchRate.style.backgroundColor = 'var(--color-red)';
-        elements.vlmMatchValue.textContent = '70%';
+        if (elements.vlmMatchRate) {
+            elements.vlmMatchRate.style.width = '70%';
+            elements.vlmMatchRate.style.backgroundColor = 'var(--color-red)';
+        }
+        if (elements.vlmMatchValue) elements.vlmMatchValue.textContent = '70%';
         
         if (state.currentMode === 'family') {
-            elements.vlmAllergenStatus.textContent = '계란/우유 검출 (막내아들 알러지원 검출)';
-            elements.vlmAnalysisReason.textContent = 'Vision 비전 AI 분석 결과, 식판에 계란말이 및 유당 우유 성분의 요구르트병이 그대로 포착되었습니다. 막내아들(우유/밀 알레르기)을 위해 두부구이와 주스로 즉시 전면 교체를 권장합니다.';
+            if (elements.vlmAllergenStatus) elements.vlmAllergenStatus.textContent = '계란/우유 검출 (막내아들 알러지원 검출)';
+            if (elements.vlmAnalysisReason) elements.vlmAnalysisReason.textContent = 'Vision 비전 AI 분석 결과, 식판에 계란말이 및 요구르트병이 그대로 포착되었습니다. 막내아들을 위해 두부구이와 주스로 교체를 진행하십시오.';
         } else if (state.currentFacility === 'child') {
-            elements.vlmAllergenStatus.textContent = '달걀, 우유 검출 (김민수 아동 비상)';
-            elements.vlmAnalysisReason.textContent = 'Vision 비전 AI 판독 결과, 조리 완료된 식판 내 1시 방향에 난황이 가미된 달걀찜과 락토프리 두유 대신 일반 가당 야쿠르트병이 인식되었습니다. 오배식 사고 예방을 위해 배식을 차단하십시오.';
+            if (elements.vlmAllergenStatus) elements.vlmAllergenStatus.textContent = '달걀, 우유 검출 (김민수 아동 비상)';
+            if (elements.vlmAnalysisReason) elements.vlmAnalysisReason.textContent = 'Vision 비전 AI 판독 결과, 조리 식판 내에 달걀 성분 계란찜 및 요구르트병이 인식되었습니다. 오배식 사고 예방을 위해 배식을 차단하십시오.';
         } else {
-            elements.vlmAllergenStatus.textContent = '백미 및 가당 유제품 검출 (최옥분, 이명자 주의)';
-            elements.vlmAnalysisReason.textContent = 'Vision 비전 AI 판독 결과, 당뇨 환자 금기 식품인 정제 백미 쌀밥 및 유당불내 최옥분 어르신 제한군 요구르트가 그대로 감지되어 오배식 경고를 발동합니다.';
+            if (elements.vlmAllergenStatus) elements.vlmAllergenStatus.textContent = '백미 및 가당 유제품 검출 (최옥분, 이명자 주의)';
+            if (elements.vlmAnalysisReason) elements.vlmAnalysisReason.textContent = 'Vision 비전 AI 판독 결과, 당뇨 최옥분 어르신 제한군 요구르트 및 백미 쌀밥이 감지되었습니다. 저나트륨 영양식단으로 교체하십시오.';
         }
         
-        elements.vlmPortionStatus.textContent = '적량 배식 (94%)';
+        if (elements.vlmPortionStatus) elements.vlmPortionStatus.textContent = '적량 배식 (94%)';
         
-        elements.vlmActionFooter.innerHTML = `
-            <button class="secondary-btn" onclick="switchTab('diet-analyzer')"><i class="fa-solid fa-rotate-left"></i> 식단 분석 재진행</button>
-            <button class="primary-btn" style="background:var(--gradient-danger);" disabled><i class="fa-solid fa-ban"></i> 배식 불가</button>
-        `;
+        if (elements.vlmActionFooter) {
+            elements.vlmActionFooter.innerHTML = `
+                <button class="secondary-btn" onclick="switchTab('diet-analyzer')"><i class="fa-solid fa-rotate-left"></i> 식단 분석 재진행</button>
+                <button class="primary-btn" style="background:var(--gradient-danger);" disabled><i class="fa-solid fa-ban"></i> 배식 불가</button>
+            `;
+        }
     } else {
-        // Passed clean alternative plate
-        elements.vlmVerdictBox.className = 'vlm-verdict-box passed';
-        elements.verdictIconContainer.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
-        elements.verdictTitle.textContent = '배식 승인 (PASSED)';
+        if (elements.vlmVerdictBox) elements.vlmVerdictBox.className = 'vlm-verdict-box passed';
+        if (elements.verdictIconContainer) elements.verdictIconContainer.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
+        if (elements.verdictTitle) elements.verdictTitle.textContent = '배식 승인 (PASSED)';
         
-        elements.vlmMatchRate.style.width = '99%';
-        elements.vlmMatchRate.style.backgroundColor = 'var(--color-green)';
-        elements.vlmMatchValue.textContent = '99%';
-        elements.vlmAllergenStatus.textContent = '위험 성분 없음 (대체 식재료 완벽 적용)';
+        if (elements.vlmMatchRate) {
+            elements.vlmMatchRate.style.width = '99%';
+            elements.vlmMatchRate.style.backgroundColor = 'var(--color-green)';
+        }
+        if (elements.vlmMatchValue) elements.vlmMatchValue.textContent = '99%';
+        if (elements.vlmAllergenStatus) elements.vlmAllergenStatus.textContent = '위험 성분 없음 (대체 식재료 완벽 적용)';
         
         if (state.currentMode === 'family') {
-            elements.vlmAnalysisReason.textContent = 'Vision 판독 완료: 계란말이 대신 식물성 부드러운 두부구이 조리가 확인되었으며, 유당 알러지 예방을 위해 천연 오렌지주스 팩 교체가 정상 배치되었습니다. 배식이 안전합니다.';
+            if (elements.vlmAnalysisReason) elements.vlmAnalysisReason.textContent = 'Vision 판독 완료: 계란말이 대신 식물성 두부구이와 오렌지주스 팩 교체가 정상 확인되었습니다. 배식이 안전합니다.';
         } else if (state.currentFacility === 'child') {
-            elements.vlmAnalysisReason.textContent = 'Vision 판독 완료: 김민수 아동 처방 대체식인 연두부구이(100g) 및 비유제품 오렌지주스 믹스가 오배식 없이 정밀 확인되었습니다. 배식을 즉시 승인합니다.';
+            if (elements.vlmAnalysisReason) elements.vlmAnalysisReason.textContent = 'Vision 판독 완료: 김민수 아동의 대체식인 연두부구이 및 오렌지주스가 매핑 확인되었습니다. 배식을 즉시 승인합니다.';
         } else {
-            elements.vlmAnalysisReason.textContent = 'Vision 판독 완료: 어르신들의 당뇨 전용 귀리잡곡밥 비율 매칭이 양호하며, 락토프리 약콩 두유가 오배식 없이 제공되었습니다. 정밀 영양 규격을 통과하였습니다.';
+            if (elements.vlmAnalysisReason) elements.vlmAnalysisReason.textContent = 'Vision 판독 완료: 당뇨 및 유당불내증 수혜 전용 잡곡밥 및 락토프리 두유 대체 배식이 검증되었습니다.';
         }
         
-        elements.vlmPortionStatus.textContent = '적량 배식 (98%)';
+        if (elements.vlmPortionStatus) elements.vlmPortionStatus.textContent = '적량 배식 (98%)';
         
-        elements.vlmActionFooter.innerHTML = `
-            <button id="approve-final-btn" class="primary-btn" style="background:var(--gradient-success); width:100%;"><i class="fa-solid fa-circle-check"></i> 최종 배식 확정 및 이력 저장</button>
-        `;
-        
-        document.getElementById('approve-final-btn').addEventListener('click', saveFinalVerificationLog);
+        if (elements.vlmActionFooter) {
+            elements.vlmActionFooter.innerHTML = `
+                <button id="approve-final-btn" class="primary-btn" style="background:var(--gradient-success); width:100%;"><i class="fa-solid fa-circle-check"></i> 최종 배식 확정 및 이력 저장</button>
+            `;
+            const btn = document.getElementById('approve-final-btn');
+            if (btn) btn.addEventListener('click', saveFinalVerificationLog);
+        }
     }
 }
 
 function renderVlmResult(apiResult) {
-    elements.vlmResultPanel.classList.remove('hidden');
-    elements.vlmEmptyResult.classList.add('hidden');
+    if (elements.vlmResultPanel) elements.vlmResultPanel.classList.remove('hidden');
+    if (elements.vlmEmptyResult) elements.vlmEmptyResult.classList.add('hidden');
     
     if (apiResult.verdict === 'REJECT') {
-        elements.vlmVerdictBox.className = 'vlm-verdict-box rejected';
-        elements.verdictIconContainer.innerHTML = '<i class="fa-solid fa-circle-xmark"></i>';
-        elements.verdictTitle.textContent = '배식 보류 (REJECTED)';
-        elements.vlmMatchRate.style.width = '68%';
-        elements.vlmMatchRate.style.backgroundColor = 'var(--color-red)';
-        elements.vlmMatchValue.textContent = '68%';
-        elements.vlmAllergenStatus.textContent = apiResult.allergen;
-        elements.vlmPortionStatus.textContent = apiResult.portion;
-        elements.vlmAnalysisReason.textContent = apiResult.reason;
+        if (elements.vlmVerdictBox) elements.vlmVerdictBox.className = 'vlm-verdict-box rejected';
+        if (elements.verdictIconContainer) elements.verdictIconContainer.innerHTML = '<i class="fa-solid fa-circle-xmark"></i>';
+        if (elements.verdictTitle) elements.verdictTitle.textContent = '배식 보류 (REJECTED)';
+        if (elements.vlmMatchRate) {
+            elements.vlmMatchRate.style.width = '68%';
+            elements.vlmMatchRate.style.backgroundColor = 'var(--color-red)';
+        }
+        if (elements.vlmMatchValue) elements.vlmMatchValue.textContent = '68%';
+        if (elements.vlmAllergenStatus) elements.vlmAllergenStatus.textContent = apiResult.allergen;
+        if (elements.vlmPortionStatus) elements.vlmPortionStatus.textContent = apiResult.portion;
+        if (elements.vlmAnalysisReason) elements.vlmAnalysisReason.textContent = apiResult.reason;
         
-        elements.vlmActionFooter.innerHTML = `
-            <button class="secondary-btn" onclick="switchTab('diet-analyzer')"><i class="fa-solid fa-rotate-left"></i> 식단 분석 재진행</button>
-            <button class="primary-btn" style="background:var(--gradient-danger);" disabled><i class="fa-solid fa-ban"></i> 배식 불가</button>
-        `;
+        if (elements.vlmActionFooter) {
+            elements.vlmActionFooter.innerHTML = `
+                <button class="secondary-btn" onclick="switchTab('diet-analyzer')"><i class="fa-solid fa-rotate-left"></i> 식단 분석 재진행</button>
+                <button class="primary-btn" style="background:var(--gradient-danger);" disabled><i class="fa-solid fa-ban"></i> 배식 불가</button>
+            `;
+        }
     } else {
-        elements.vlmVerdictBox.className = 'vlm-verdict-box passed';
-        elements.verdictIconContainer.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
-        elements.verdictTitle.textContent = '배식 승인 (PASSED)';
-        elements.vlmMatchRate.style.width = '99%';
-        elements.vlmMatchRate.style.backgroundColor = 'var(--color-green)';
-        elements.vlmMatchValue.textContent = '99%';
-        elements.vlmAllergenStatus.textContent = '유해/금지 성분 검출되지 않음';
-        elements.vlmPortionStatus.textContent = apiResult.portion;
-        elements.vlmAnalysisReason.textContent = apiResult.reason;
+        if (elements.vlmVerdictBox) elements.vlmVerdictBox.className = 'vlm-verdict-box passed';
+        if (elements.verdictIconContainer) elements.verdictIconContainer.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
+        if (elements.verdictTitle) elements.verdictTitle.textContent = '배식 승인 (PASSED)';
+        if (elements.vlmMatchRate) {
+            elements.vlmMatchRate.style.width = '99%';
+            elements.vlmMatchRate.style.backgroundColor = 'var(--color-green)';
+        }
+        if (elements.vlmMatchValue) elements.vlmMatchValue.textContent = '99%';
+        if (elements.vlmAllergenStatus) elements.vlmAllergenStatus.textContent = '유해/금지 성분 검출되지 않음';
+        if (elements.vlmPortionStatus) elements.vlmPortionStatus.textContent = apiResult.portion;
+        if (elements.vlmAnalysisReason) elements.vlmAnalysisReason.textContent = apiResult.reason;
         
-        elements.vlmActionFooter.innerHTML = `
-            <button id="approve-final-btn" class="primary-btn" style="background:var(--gradient-success); width:100%;"><i class="fa-solid fa-circle-check"></i> 최종 배식 확정 및 이력 저장</button>
-        `;
-        document.getElementById('approve-final-btn').addEventListener('click', saveFinalVerificationLog);
+        if (elements.vlmActionFooter) {
+            elements.vlmActionFooter.innerHTML = `
+                <button id="approve-final-btn" class="primary-btn" style="background:var(--gradient-success); width:100%;"><i class="fa-solid fa-circle-check"></i> 최종 배식 확정 및 이력 저장</button>
+            `;
+            const btn = document.getElementById('approve-final-btn');
+            if (btn) btn.addEventListener('click', saveFinalVerificationLog);
+        }
     }
 }
 
 function saveFinalVerificationLog() {
     const diet = defaultDiets[state.selectedMealIndex];
+    if (!diet) return;
+    
     const today = new Date();
     const dateStr = today.toISOString().split('T')[0];
     const timeStr = today.toTimeString().split(' ')[0].substring(0, 5);
@@ -1160,70 +1204,83 @@ function saveFinalVerificationLog() {
 
 function renderDietVerification() {
     const diet = defaultDiets[state.selectedMealIndex];
+    if (!diet) return;
     
-    elements.selectedMealLabel.textContent = diet.date;
+    if (elements.selectedMealLabel) elements.selectedMealLabel.textContent = diet.date;
     
-    // Render Menu Items
-    elements.verificationMenuList.innerHTML = '';
-    diet.menu.forEach(item => {
-        const row = document.createElement('div');
-        row.className = 'menu-ingredient-item';
-        row.innerHTML = `
-            <span class="food-name">${item.name}</span>
-            <span class="food-weight">${item.weight}</span>
-        `;
-        elements.verificationMenuList.appendChild(row);
-    });
+    if (elements.verificationMenuList) {
+        elements.verificationMenuList.innerHTML = '';
+        diet.menu.forEach(item => {
+            const row = document.createElement('div');
+            row.className = 'menu-ingredient-item';
+            row.innerHTML = `
+                <span class="food-name">${item.name}</span>
+                <span class="food-weight">${item.weight}</span>
+            `;
+            elements.verificationMenuList.appendChild(row);
+        });
+    }
 
-    // Render verification report
-    elements.verificationResultsList.innerHTML = '';
-    diet.results.forEach(res => {
-        const card = document.createElement('div');
-        const alertClass = res.status === 'danger' ? 'alert-danger' : res.status === 'warning' ? 'alert-warning' : 'alert-info';
-        const tagClass = res.status === 'danger' ? 'tag-danger' : res.status === 'warning' ? 'tag-warning' : 'tag-info';
-        
-        card.className = `verif-result-card ${alertClass}`;
-        card.innerHTML = `
-            <div class="res-num">${res.num}</div>
-            <div class="res-body">
-                <h4>${res.title}</h4>
-                <p>${res.desc}</p>
-            </div>
-            <div class="res-tag ${tagClass}">${res.status === 'danger' ? '위험' : res.status === 'warning' ? '주의' : '안내'}</div>
-        `;
-        elements.verificationResultsList.appendChild(card);
-    });
+    if (elements.verificationResultsList) {
+        elements.verificationResultsList.innerHTML = '';
+        diet.results.forEach(res => {
+            const card = document.createElement('div');
+            const alertClass = res.status === 'danger' ? 'alert-danger' : res.status === 'warning' ? 'alert-warning' : 'alert-info';
+            const tagClass = res.status === 'danger' ? 'tag-danger' : res.status === 'warning' ? 'tag-warning' : 'tag-info';
+            
+            card.className = `verif-result-card ${alertClass}`;
+            card.innerHTML = `
+                <div class="res-num">${res.num}</div>
+                <div class="res-body">
+                    <h4>${res.title}</h4>
+                    <p>${res.desc}</p>
+                </div>
+                <div class="res-tag ${tagClass}">${res.status === 'danger' ? '위험' : res.status === 'warning' ? '주의' : '안내'}</div>
+            `;
+            elements.verificationResultsList.appendChild(card);
+        });
+    }
 
-    // Alternative recipe box
-    if (diet.alternative) {
+    if (diet.alternative && elements.vAlternativeBox) {
         elements.vAlternativeBox.classList.remove('hidden');
         const altFlow = elements.vAlternativeBox.querySelector('.alternative-flow');
-        altFlow.innerHTML = `
-            <div class="menu-before">${diet.alternative.from}</div>
-            <i class="fa-solid fa-arrow-right-long arrow-icon"></i>
-            <div class="menu-after text-green">${diet.alternative.to}</div>
-        `;
-        elements.vAlternativeBox.querySelector('.alt-effect-desc').innerHTML = `
-            <strong>개선 효과</strong>: ${diet.alternative.effect}
-        `;
-    } else {
+        if (altFlow) {
+            altFlow.innerHTML = `
+                <div class="menu-before">${diet.alternative.from}</div>
+                <i class="fa-solid fa-arrow-right-long arrow-icon"></i>
+                <div class="menu-after text-green">${diet.alternative.to}</div>
+            `;
+        }
+        const eff = elements.vAlternativeBox.querySelector('.alt-effect-desc');
+        if (eff) {
+            eff.innerHTML = `
+                <strong>개선 효과</strong>: ${diet.alternative.effect}
+            `;
+        }
+    } else if (elements.vAlternativeBox) {
         elements.vAlternativeBox.classList.add('hidden');
     }
 }
 
-// Ingredient Safety Management init
 function initIngredientSafety() {
-    elements.btnSearchSafety.addEventListener('click', runSafetyRecallFilter);
-    elements.safetySearchInput.addEventListener('keyup', (e) => {
-        if (e.key === 'Enter') runSafetyRecallFilter();
-    });
-
-    elements.btnLoadMoreRecalls.addEventListener('click', () => {
-        showNotification("추가적인 식품안전정보 공공데이터 위해내역을 동기화합니다.");
-    });
+    if (elements.btnSearchSafety) {
+        elements.btnSearchSafety.addEventListener('click', runSafetyRecallFilter);
+    }
+    if (elements.safetySearchInput) {
+        elements.safetySearchInput.addEventListener('keyup', (e) => {
+            if (e.key === 'Enter') runSafetyRecallFilter();
+        });
+    }
+    if (elements.btnLoadMoreRecalls) {
+        elements.btnLoadMoreRecalls.addEventListener('click', () => {
+            showNotification("추가적인 위해식재료 회수 공공데이터 내역을 로드합니다.");
+        });
+    }
 }
 
 function runSafetyRecallFilter() {
+    if (!elements.safetySearchInput || !elements.recallTableBody) return;
+    
     const query = elements.safetySearchInput.value.trim().toLowerCase();
     state.recallSearchQuery = query;
     
@@ -1247,90 +1304,107 @@ function runSafetyRecallFilter() {
             `;
             elements.recallTableBody.appendChild(tr);
         });
-        elements.recallTotalBadge.textContent = `${filtered.length}건 검색됨`;
+        if (elements.recallTotalBadge) elements.recallTotalBadge.textContent = `${filtered.length}건 위해요소 발견`;
     } else {
         elements.recallTableBody.innerHTML = `
             <tr>
                 <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 30px;">
                     <i class="fa-solid fa-circle-info" style="font-size:20px; margin-bottom:8px;"></i><br>
-                    입력하신 식재료의 위해/회수 위해성이 발견되지 않았습니다. (안심 식품 식자재군)
+                    위해 및 회수 식자재 정보가 감지되지 않았습니다. (안전 등급 식재료군)
                 </td>
             </tr>
         `;
-        elements.recallTotalBadge.textContent = '0건';
+        if (elements.recallTotalBadge) elements.recallTotalBadge.textContent = '0건';
     }
 }
 
-// User custom management
 function initUserCustomMgmt() {
-    elements.customTabBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            elements.customTabBtns.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            
-            const subtab = btn.getAttribute('data-subtab');
-            document.querySelectorAll('.subtab-content').forEach(c => c.classList.remove('active-subtab'));
-            document.getElementById(`subtab-${subtab}`).classList.add('active-subtab');
+    if (elements.customTabBtns) {
+        elements.customTabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                elements.customTabBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                const subtab = btn.getAttribute('data-subtab');
+                document.querySelectorAll('.subtab-content').forEach(c => c.classList.remove('active-subtab'));
+                const el = document.getElementById(`subtab-${subtab}`);
+                if (el) el.classList.add('active-subtab');
+            });
         });
-    });
+    }
 
-    elements.addMemberBtn.addEventListener('click', () => {
-        elements.addMemberModal.classList.remove('hidden');
-    });
+    if (elements.addMemberBtn) {
+        elements.addMemberBtn.addEventListener('click', () => {
+            if (elements.addMemberModal) elements.addMemberModal.classList.remove('hidden');
+        });
+    }
 
-    elements.closeMemberModalBtn.addEventListener('click', () => elements.addMemberModal.classList.add('hidden'));
-    elements.cancelMemberBtn.addEventListener('click', () => elements.addMemberModal.classList.add('hidden'));
+    if (elements.closeMemberModalBtn) {
+        elements.closeMemberModalBtn.addEventListener('click', () => {
+            if (elements.addMemberModal) elements.addMemberModal.classList.add('hidden');
+        });
+    }
+    if (elements.cancelMemberBtn) {
+        elements.cancelMemberBtn.addEventListener('click', () => {
+            if (elements.addMemberModal) elements.addMemberModal.classList.add('hidden');
+        });
+    }
 
-    elements.memberForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        
-        const name = document.getElementById('m-name').value.trim();
-        const ageVal = document.getElementById('m-age').value.trim();
-        const gender = document.getElementById('m-gender').value;
-        const type = document.getElementById('m-risk-type').value;
-        const detail = document.getElementById('m-detail').value.trim();
-        const instruction = document.getElementById('m-instruction').value.trim();
-        
-        if (!name || !ageVal || !detail || !instruction) return;
+    if (elements.memberForm) {
+        elements.memberForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const name = document.getElementById('m-name').value.trim();
+            const ageVal = document.getElementById('m-age').value.trim();
+            const gender = document.getElementById('m-gender').value;
+            const type = document.getElementById('m-risk-type').value;
+            const detail = document.getElementById('m-detail').value.trim();
+            const instruction = document.getElementById('m-instruction').value.trim();
+            
+            if (!name || !ageVal || !detail || !instruction) return;
 
-        const listKey = state.currentMode === 'family' ? 'family' : state.currentFacility;
-        const newId = state.members[listKey].length > 0 ? Math.max(...state.members[listKey].map(m => m.id)) + 1 : 1;
-        
-        const memberObj = {
-            id: newId,
-            name: name,
-            age: `${ageVal}세 / ${gender}`,
-            type: type,
-            detail: detail,
-            instruction: instruction,
-            status: type === '일반' ? 'safe' : 'care'
-        };
+            const listKey = state.currentMode === 'family' ? 'family' : state.currentFacility;
+            const newId = state.members[listKey].length > 0 ? Math.max(...state.members[listKey].map(m => m.id)) + 1 : 1;
+            
+            const memberObj = {
+                id: newId,
+                name: name,
+                age: `${ageVal}세 / ${gender}`,
+                type: type,
+                detail: detail,
+                instruction: instruction,
+                status: type === '일반' ? 'safe' : 'care'
+            };
 
-        state.members[listKey].push(memberObj);
-        saveDatabase(listKey);
-        
-        elements.addMemberModal.classList.add('hidden');
-        elements.memberForm.reset();
-        
-        renderUserCustomMgmt();
-        renderDashboard();
-        showNotification(`신규 케어 대상자 ${name}님이 등록 완료되었습니다.`);
-    });
+            state.members[listKey].push(memberObj);
+            saveDatabase(listKey);
+            
+            if (elements.addMemberModal) elements.addMemberModal.classList.add('hidden');
+            elements.memberForm.reset();
+            
+            renderUserCustomMgmt();
+            renderDashboard();
+            showNotification(`신규 케어 대상자 ${name}님이 등록 완료되었습니다.`);
+        });
+    }
 }
 
 function renderUserCustomMgmt() {
     const listKey = state.currentMode === 'family' ? 'family' : state.currentFacility;
     const list = state.members[listKey];
+    if (!list) return;
     
-    // Re-title list
-    if (state.currentMode === 'family') {
-        elements.panelMemberTitle.innerHTML = '<i class="fa-solid fa-people-roof"></i> 가족 구성원';
-        elements.modalMemberTitle.innerHTML = '<i class="fa-solid fa-house-chimney-medical"></i> 가족 건강 프로필 신규 등록';
-    } else {
-        elements.panelMemberTitle.innerHTML = '<i class="fa-solid fa-id-card"></i> 대상자 명단';
-        elements.modalMemberTitle.innerHTML = '<i class="fa-solid fa-user-plus"></i> 신규 관리 대상자 등록';
+    if (elements.panelMemberTitle) {
+        if (state.currentMode === 'family') {
+            elements.panelMemberTitle.innerHTML = '<i class="fa-solid fa-people-roof"></i> 가족 구성원';
+            if (elements.modalMemberTitle) elements.modalMemberTitle.innerHTML = '<i class="fa-solid fa-house-chimney-medical"></i> 가족 건강 프로필 신규 등록';
+        } else {
+            elements.panelMemberTitle.innerHTML = '<i class="fa-solid fa-id-card"></i> 대상자 명단';
+            if (elements.modalMemberTitle) elements.modalMemberTitle.innerHTML = '<i class="fa-solid fa-user-plus"></i> 신규 관리 대상자 등록';
+        }
     }
 
+    if (!elements.customUserPickerContainer) return;
     elements.customUserPickerContainer.innerHTML = '';
     
     if (list.length === 0) {
@@ -1360,13 +1434,12 @@ function renderUserCustomMgmt() {
         elements.customUserPickerContainer.appendChild(item);
     });
 
-    // Render detail pane
     const user = list.find(m => m.id === state.selectedUserId) || list[0];
     if (user) {
         state.selectedUserId = user.id;
         
-        elements.selectedUserAvatar.textContent = user.name.charAt(0);
-        elements.selectedUserName.textContent = user.name;
+        if (elements.selectedUserAvatar) elements.selectedUserAvatar.textContent = user.name.charAt(0);
+        if (elements.selectedUserName) elements.selectedUserName.textContent = user.name;
         
         let typeStr = '';
         if (state.currentMode === 'family') {
@@ -1374,165 +1447,168 @@ function renderUserCustomMgmt() {
         } else {
             typeStr = `${state.currentFacility === 'child' ? '원아' : '입소어르신'} / ${user.age}`;
         }
-        elements.selectedUserType.textContent = typeStr;
+        if (elements.selectedUserType) elements.selectedUserType.textContent = typeStr;
 
-        // Details
         const isAllergy = user.type === '알레르기';
         const isDisease = user.type === '질환식';
         
-        elements.selectedUserDiseases.textContent = isDisease ? user.detail : '없음';
-        elements.selectedUserDiets.textContent = isDisease ? user.detail : '없음';
-        elements.selectedUserAllergies.textContent = isAllergy ? user.detail : '없음';
+        if (elements.selectedUserDiseases) elements.selectedUserDiseases.textContent = isDisease ? user.detail : '없음';
+        if (elements.selectedUserDiets) elements.selectedUserDiets.textContent = isDisease ? user.detail : '없음';
+        if (elements.selectedUserAllergies) elements.selectedUserAllergies.textContent = isAllergy ? user.detail : '없음';
         
         let swallowLevel = '일반 삼킴';
         if (user.detail.includes('연하') || user.instruction.includes('연하')) {
             swallowLevel = '연하 2단계 (연화처치식)';
         }
-        elements.selectedUserSwallow.textContent = swallowLevel;
+        if (elements.selectedUserSwallow) elements.selectedUserSwallow.textContent = swallowLevel;
 
-        // Guidelines pills
-        elements.userGuidelinesPills.innerHTML = '';
-        if (isAllergy) {
-            elements.userGuidelinesPills.innerHTML += `<div class="guideline-badge low-sodium">알레르기 조치 <span class="sub text-muted">${user.detail} 격리 급식</span></div>`;
-        } else if (isDisease) {
-            if (user.detail.includes('당뇨')) {
-                elements.userGuidelinesPills.innerHTML += `<div class="guideline-badge diabetes">당뇨식 <span class="sub text-muted">탄수화물 및 단순당 제한</span></div>`;
+        if (elements.userGuidelinesPills) {
+            elements.userGuidelinesPills.innerHTML = '';
+            if (isAllergy) {
+                elements.userGuidelinesPills.innerHTML += `<div class="guideline-badge low-sodium">알레르기 조치 <span class="sub text-muted">${user.detail} 격리 급식</span></div>`;
+            } else if (isDisease) {
+                if (user.detail.includes('당뇨')) {
+                    elements.userGuidelinesPills.innerHTML += `<div class="guideline-badge diabetes">당뇨식 <span class="sub text-muted">탄수화물 제한</span></div>`;
+                }
+                if (user.detail.includes('고혈압') || user.instruction.includes('저염')) {
+                    elements.userGuidelinesPills.innerHTML += `<div class="guideline-badge low-sodium">저염식 <span class="sub text-muted">나트륨 1,500mg 조절</span></div>`;
+                }
+                if (user.detail.includes('연하')) {
+                    elements.userGuidelinesPills.innerHTML += `<div class="guideline-badge swallow">연하식 <span class="sub text-muted">연하 2단계 연화 다짐</span></div>`;
+                }
+            } else {
+                elements.userGuidelinesPills.innerHTML = '<div class="guideline-badge swallow" style="background-color:rgba(0,0,0,0.03); color:var(--text-secondary); border-color:var(--border-color);">일반 급식 기준 <span class="sub text-muted">특이사항 없음</span></div>';
             }
-            if (user.detail.includes('고혈압') || user.instruction.includes('저염')) {
-                elements.userGuidelinesPills.innerHTML += `<div class="guideline-badge low-sodium">저염식 <span class="sub text-muted">나트륨 1,500mg 조절</span></div>`;
-            }
-            if (user.detail.includes('연하')) {
-                elements.userGuidelinesPills.innerHTML += `<div class="guideline-badge swallow">연하식 <span class="sub text-muted">연하 2단계 식재료 분리 다짐</span></div>`;
-            }
-        } else {
-            elements.userGuidelinesPills.innerHTML = '<div class="guideline-badge swallow" style="background-color:rgba(0,0,0,0.03); color:var(--text-secondary); border-color:var(--border-color);">일반 급식 기준 <span class="sub text-muted">특이사항 없음</span></div>';
         }
 
-        // Avoid foods grid
-        elements.userAvoidFoods.innerHTML = '';
-        if (isAllergy) {
-            const allergenList = user.detail.split(',');
-            allergenList.forEach(alg => {
-                const clean = alg.trim();
-                let ex = '교차오염 차단 도구 사용';
-                if (clean.includes('달걀') || clean.includes('계란')) ex = '계란말이, 계란찜, 마요네즈, 빵류';
-                if (clean.includes('우유')) ex = '유제품, 야쿠르트, 치즈, 아이스크림';
-                if (clean.includes('밀')) ex = '밀가루, 부침개, 면류, 과자류';
-                if (clean.includes('대두')) ex = '간장 조림, 된장국, 콩자반, 식포류';
+        if (elements.userAvoidFoods) {
+            elements.userAvoidFoods.innerHTML = '';
+            if (isAllergy) {
+                const allergenList = user.detail.split(',');
+                allergenList.forEach(alg => {
+                    const clean = alg.trim();
+                    let ex = '교차오염 차단 도구 분리 사용';
+                    if (clean.includes('달걀') || clean.includes('계란')) ex = '계란말이, 계란찜, 마요네즈, 빵류';
+                    if (clean.includes('우유')) ex = '유제품, 야쿠르트, 치즈, 아이스크림';
+                    if (clean.includes('밀')) ex = '밀가루, 부침개, 면류, 과자류';
+                    if (clean.includes('대두')) ex = '간장 조림, 된장국, 콩자반, 식포류';
 
-                elements.userAvoidFoods.innerHTML += `
-                    <div class="avoid-food-card danger">
-                        <div class="card-icon"><i class="fa-solid fa-circle-xmark"></i></div>
-                        <div class="card-info">
-                            <h4>${clean} 포함 식품</h4>
-                            <p>${ex} 등 유래 물질 전면 제외 급식</p>
+                    elements.userAvoidFoods.innerHTML += `
+                        <div class="avoid-food-card danger">
+                            <div class="card-icon"><i class="fa-solid fa-circle-xmark"></i></div>
+                            <div class="card-info">
+                                <h4>${clean} 포함 식품</h4>
+                                <p>${ex} 등 유래 물질 전면 제외 급식</p>
+                            </div>
                         </div>
-                    </div>
-                `;
-            });
-        } else if (isDisease) {
-            if (user.detail.includes('당뇨')) {
-                elements.userAvoidFoods.innerHTML += `
-                    <div class="avoid-food-card danger">
-                        <div class="card-icon"><i class="fa-solid fa-circle-xmark"></i></div>
+                    `;
+                });
+            } else if (isDisease) {
+                if (user.detail.includes('당뇨')) {
+                    elements.userAvoidFoods.innerHTML += `
+                        <div class="avoid-food-card danger">
+                            <div class="card-icon"><i class="fa-solid fa-circle-xmark"></i></div>
+                            <div class="card-info">
+                                <h4>단순당 높은 식품</h4>
+                                <p>케이크, 초콜릿, 탄산음료 등 과당 함유 가공품 배제</p>
+                            </div>
+                        </div>
+                    `;
+                }
+                if (user.detail.includes('고혈압')) {
+                    elements.userAvoidFoods.innerHTML += `
+                        <div class="avoid-food-card warning">
+                            <div class="card-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                            <div class="card-info">
+                                <h4>고나트륨 염장 가공품</h4>
+                                <p>젓갈, 장아찌, 고염도 찌개 양념 육수 섭취 제한</p>
+                            </div>
+                        </div>
+                    `;
+                }
+                if (user.detail.includes('연하')) {
+                    elements.userAvoidFoods.innerHTML += `
+                        <div class="avoid-food-card danger">
+                            <div class="card-icon"><i class="fa-solid fa-circle-xmark"></i></div>
+                            <div class="card-info">
+                                <h4>질기거나 딱딱한 식품</h4>
+                                <p>견과류, 말린 오징어, 대형 생채소류 등 목넘김 방해 물질 차단</p>
+                            </div>
+                        </div>
+                    `;
+                }
+            } else {
+                elements.userAvoidFoods.innerHTML = `
+                    <div class="avoid-food-card warning" style="background-color:rgba(0,0,0,0.01); border-color:var(--border-color);">
+                        <div class="card-icon" style="color:var(--text-muted);"><i class="fa-solid fa-circle-check"></i></div>
                         <div class="card-info">
-                            <h4>단순당 높은 식품</h4>
-                            <p>케이크, 초콜릿, 탄산음료 등 과당 함유 가공품 배제</p>
+                            <h4 style="color:var(--text-primary);">제한 식품 없음</h4>
+                            <p>일반 위생 조리 지침 준수식 급식 제공 가능</p>
                         </div>
                     </div>
                 `;
             }
-            if (user.detail.includes('고혈압')) {
-                elements.userAvoidFoods.innerHTML += `
-                    <div class="avoid-food-card warning">
-                        <div class="card-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
-                        <div class="card-info">
-                            <h4>고나트륨 염장 가공품</h4>
-                            <p>젓갈, 장아찌, 고염도 찌개 양념 육수 섭취 제한</p>
-                        </div>
-                    </div>
-                `;
-            }
-            if (user.detail.includes('연하')) {
-                elements.userAvoidFoods.innerHTML += `
-                    <div class="avoid-food-card danger">
-                        <div class="card-icon"><i class="fa-solid fa-circle-xmark"></i></div>
-                        <div class="card-info">
-                            <h4>질기거나 딱딱한 식품</h4>
-                            <p>견과류, 말린 오징어, 대형 생채소류 등 목넘김 방해 물질 차단</p>
-                        </div>
-                    </div>
-                `;
-            }
-        } else {
-            elements.userAvoidFoods.innerHTML = `
-                <div class="avoid-food-card warning" style="background-color:rgba(0,0,0,0.01); border-color:var(--border-color);">
-                    <div class="card-icon" style="color:var(--text-muted);"><i class="fa-solid fa-circle-check"></i></div>
-                    <div class="card-info">
-                        <h4 style="color:var(--text-primary);">제한 식품 없음</h4>
-                        <p>일반 위생 조리 지침 준수식 급식 제공 가능</p>
-                    </div>
+        }
+
+        if (elements.infoDetailsList) {
+            elements.infoDetailsList.innerHTML = `
+                <div class="detail-log-row">
+                    <div class="log-lbl">고유식별키</div>
+                    <div class="log-val">CT-${user.id}-2026</div>
+                </div>
+                <div class="detail-log-row">
+                    <div class="log-lbl">수혜자성명</div>
+                    <div class="log-val"><strong>${user.name}</strong></div>
+                </div>
+                <div class="detail-log-row">
+                    <div class="log-lbl">연령 및 정보</div>
+                    <div class="log-val">${user.age}</div>
+                </div>
+                <div class="detail-log-row">
+                    <div class="log-lbl">위험도 진단</div>
+                    <div class="log-val"><span class="risk-tag ${user.type === '알레르기' ? 'allergy' : user.type === '질환식' ? 'disease' : 'general'}">${user.type}</span></div>
+                </div>
+                <div class="detail-log-row">
+                    <div class="log-lbl">조리제한지침</div>
+                    <div class="log-val">${user.instruction}</div>
                 </div>
             `;
         }
 
-        // Subtab Info details rendering
-        elements.infoDetailsList.innerHTML = `
-            <div class="detail-log-row">
-                <div class="log-lbl">고유식별키</div>
-                <div class="log-val">CT-${user.id}-2026</div>
-            </div>
-            <div class="detail-log-row">
-                <div class="log-lbl">수혜자성명</div>
-                <div class="log-val"><strong>${user.name}</strong></div>
-            </div>
-            <div class="detail-log-row">
-                <div class="log-lbl">연령 및 정보</div>
-                <div class="log-val">${user.age}</div>
-            </div>
-            <div class="detail-log-row">
-                <div class="log-lbl">위험도 진단</div>
-                <div class="log-val"><span class="risk-tag ${user.type === '알레르기' ? 'allergy' : user.type === '질환식' ? 'disease' : 'general'}">${user.type}</span></div>
-            </div>
-            <div class="detail-log-row">
-                <div class="log-lbl">조리제한지침</div>
-                <div class="log-val">${user.instruction}</div>
-            </div>
-        `;
-
-        // Subtab History timeline log rendering
-        elements.historyTimelineContainer.innerHTML = '';
-        const userLogs = state.logs.filter(l => l.target.includes(user.name));
-        
-        if (userLogs.length > 0) {
-            userLogs.forEach(log => {
-                const timelineCard = document.createElement('div');
-                timelineCard.className = 'timeline-item-card';
-                timelineCard.innerHTML = `
-                    <div class="timeline-time">${log.timestamp}</div>
-                    <div class="timeline-title">${log.alternative}</div>
-                    <div class="timeline-desc">제공메뉴: ${log.menu}<br>조리감독: ${log.guideline} [VLM ${log.vlmStatus}]</div>
+        if (elements.historyTimelineContainer) {
+            elements.historyTimelineContainer.innerHTML = '';
+            const userLogs = state.logs.filter(l => l.target.includes(user.name));
+            
+            if (userLogs.length > 0) {
+                userLogs.forEach(log => {
+                    const timelineCard = document.createElement('div');
+                    timelineCard.className = 'timeline-item-card';
+                    timelineCard.innerHTML = `
+                        <div class="timeline-time">${log.timestamp}</div>
+                        <div class="timeline-title">${log.alternative}</div>
+                        <div class="timeline-desc">제공메뉴: ${log.menu}<br>조리감독: ${log.guideline} [VLM ${log.vlmStatus}]</div>
+                    `;
+                    elements.historyTimelineContainer.appendChild(timelineCard);
+                });
+            } else {
+                elements.historyTimelineContainer.innerHTML = `
+                    <div class="timeline-item-card" style="border-style:dashed;">
+                        <div class="timeline-time">기록 없음</div>
+                        <div class="timeline-title">대체 급식 제공 이력이 없습니다.</div>
+                        <div class="timeline-desc">VLM 배식 스캔을 완료하면 해당 이력이 타임라인에 누적 보관됩니다.</div>
+                    </div>
                 `;
-                elements.historyTimelineContainer.appendChild(timelineCard);
-            });
-        } else {
-            elements.historyTimelineContainer.innerHTML = `
-                <div class="timeline-item-card" style="border-style:dashed;">
-                    <div class="timeline-time">기록 없음</div>
-                    <div class="timeline-title">대체 급식 제공 이력이 없습니다.</div>
-                    <div class="timeline-desc">VLM 배식 스캔을 완료하면 해당 이력이 타임라인에 누적 보관됩니다.</div>
-                </div>
-            `;
+            }
         }
     }
 }
 
-// Statistical Report filter logic
 function initStatsReport() {
+    if (!elements.btnStatsSearch) return;
     elements.btnStatsSearch.addEventListener('click', () => {
-        const start = elements.statsDateStart.value;
-        const end = elements.statsDateEnd.value;
-        showNotification(`${start} ~ ${end} 기간 동안의 급식 위험 예방 정보가 실시간 재조회되었습니다.`);
+        const start = elements.statsDateStart ? elements.statsDateStart.value : '2026-05-01';
+        const end = elements.statsDateEnd ? elements.statsDateEnd.value : '2026-05-31';
+        showNotification(`${start} ~ ${end} 기간의 급식 예방 통계 데이터를 재조회합니다.`);
         setTimeout(() => {
             updateCharts();
         }, 100);
@@ -1545,23 +1621,27 @@ function renderStatsReport() {
     }, 100);
 }
 
-// SSIS Evidence printable logs
 function initReportCenter() {
-    elements.reportSubTabBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            elements.reportSubTabBtns.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            renderReport();
+    if (elements.reportSubTabBtns) {
+        elements.reportSubTabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                elements.reportSubTabBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                renderReport();
+            });
         });
-    });
+    }
 
-    elements.printReportBtn.addEventListener('click', () => {
-        window.print();
-    });
+    if (elements.printReportBtn) {
+        elements.printReportBtn.addEventListener('click', () => {
+            window.print();
+        });
+    }
 }
 
 function renderReport() {
-    const activeSubTab = document.querySelector('.sub-tab-btn.active').getAttribute('data-report');
+    const activeBtn = document.querySelector('.sub-tab-btn.active');
+    const activeSubTab = activeBtn ? activeBtn.getAttribute('data-report') : '급식일지';
     
     let facilityName = '';
     let reportWriter = '';
@@ -1571,23 +1651,23 @@ function renderReport() {
         facilityName = '마포구 서교동 삼총사 가정';
         reportWriter = '가정 영양 리더';
         reportSigner = '보호자 자필 서명';
-        elements.reportConfirmStatement.textContent = '위와 같이 가족 구성원의 특이 체질 및 지침에 부합하는 안전 식단과 대체 배식이 올바르게 실행되었음을 확인하며 VLM 스캔 검증 이력을 디지털 기록합니다.';
-        elements.reportSignerName.textContent = '가족 건강 확인자: 보호자 (인)';
-        elements.reportFooterDesc.textContent = 'CareTable 가정용 식단 위생 자율 점검 대장 (F-2026)';
+        if (elements.reportConfirmStatement) elements.reportConfirmStatement.textContent = '위와 같이 가족 구성원의 특이 체질 및 지침에 부합하는 안전 식단과 대체 배식이 올바르게 실행되었음을 확인하며 VLM 스캔 검증 이력을 디지털 기록합니다.';
+        if (elements.reportSignerName) elements.reportSignerName.textContent = '가족 건강 확인자: 보호자 (인)';
+        if (elements.reportFooterDesc) elements.reportFooterDesc.textContent = 'CareTable 가정용 식단 위생 자율 점검 대장 (F-2026)';
     } else {
         facilityName = state.currentFacility === 'child' ? '튼튼어린이집' : '행복실버요양원';
         reportWriter = '박아름 사회복지사';
         reportSigner = '시설대표 박아름 (서명)';
-        elements.reportConfirmStatement.textContent = '위와 같이 취약계층 급식 관리 및 대체 배식이 올바르게 수행되었으며, 배식 전 VLM(Vision-Language Model) 검증 절차를 완료하였음을 확인합니다.';
-        elements.reportSignerName.textContent = '확인자: 시설대표 박아름 (서명/인)';
-        elements.reportFooterDesc.textContent = '한국사회보장정보원 사회복지시설평가 증빙 표준 서식 (SSIS 14-2)';
+        if (elements.reportConfirmStatement) elements.reportConfirmStatement.textContent = '위와 같이 취약계층 급식 관리 및 대체 배식이 올바르게 수행되었으며, 배식 전 VLM(Vision-Language Model) 검증 절차를 완료하였음을 확인합니다.';
+        if (elements.reportSignerName) elements.reportSignerName.textContent = '확인자: 시설대표 박아름 (서명/인)';
+        if (elements.reportFooterDesc) elements.reportFooterDesc.textContent = '한국사회보장정보원 사회복지시설평가 증빙 표준 서식 (SSIS 14-2)';
     }
 
-    elements.rFacilityName.textContent = facilityName;
-    elements.rWriter.textContent = reportWriter;
+    if (elements.rFacilityName) elements.rFacilityName.textContent = facilityName;
+    if (elements.rWriter) elements.rWriter.textContent = reportWriter;
     
     const today = new Date();
-    elements.rDate.textContent = `${today.getFullYear()}년 ${String(today.getMonth() + 1).padStart(2, '0')}월 ${String(today.getDate()).padStart(2, '0')}일`;
+    if (elements.rDate) elements.rDate.textContent = `${today.getFullYear()}년 ${String(today.getMonth() + 1).padStart(2, '0')}월 ${String(today.getDate()).padStart(2, '0')}일`;
 
     const currentFilterKey = state.currentMode === 'family' ? 'family' : state.currentFacility;
     const filteredLogs = state.logs.filter(l => l.facility === currentFilterKey);
@@ -1595,7 +1675,7 @@ function renderReport() {
     let contentHtml = '';
 
     if (activeSubTab === '급식일지') {
-        elements.reportDocTitle.textContent = state.currentMode === 'family' ? '가 정 식 단 위 생 일 지' : '영 양 급 식 일 지';
+        if (elements.reportDocTitle) elements.reportDocTitle.textContent = state.currentMode === 'family' ? '가 정 식 단 위 생 일 지' : '영 양 급 식 일 지';
         
         contentHtml = `
             <div class="report-paper-body">
@@ -1629,7 +1709,7 @@ function renderReport() {
             </div>
         `;
     } else if (activeSubTab === '알레르기대장') {
-        elements.reportDocTitle.textContent = state.currentMode === 'family' ? '가족 알레르기 및 만성질환 DB' : '집중 케어 대상자 대장';
+        if (elements.reportDocTitle) elements.reportDocTitle.textContent = state.currentMode === 'family' ? '가족 알레르기 및 만성질환 DB' : '집중 케어 대상자 대장';
         
         contentHtml = `
             <div class="report-paper-body">
@@ -1661,7 +1741,7 @@ function renderReport() {
             </div>
         `;
     } else if (activeSubTab === '대체식대장') {
-        elements.reportDocTitle.textContent = '대 체 급 식 제 공 대 장';
+        if (elements.reportDocTitle) elements.reportDocTitle.textContent = '대 체 급 식 제 공 대 장';
         
         contentHtml = `
             <div class="report-paper-body">
@@ -1698,219 +1778,224 @@ function renderReport() {
         `;
     }
 
-    elements.reportDocContent.innerHTML = contentHtml;
+    if (elements.reportDocContent) elements.reportDocContent.innerHTML = contentHtml;
 
-    // Carbon reduction formula
     const savedHours = (filteredLogs.length * 4.2).toFixed(1);
     const co2Saved = (filteredLogs.length * 12.0).toFixed(1);
     
-    elements.esgCo2.textContent = `${co2Saved}kg`;
-    elements.esgTime.textContent = `${savedHours}시간`;
-    elements.esgLocal.textContent = state.currentMode === 'family' ? '75%' : (state.currentFacility === 'child' ? '45%' : '60%');
-    
-    if (state.currentMode === 'family') {
-        elements.esgTime.parentElement.querySelector('.esg-lbl').textContent = '가사 노동 및 행정 절감 시간';
-        elements.esgTime.parentElement.querySelector('.esg-sub').textContent = '레시피 고민 및 자율 기록 자동화 효과';
-    } else {
-        elements.esgTime.parentElement.querySelector('.esg-lbl').textContent = '행정 시간 ➔ 직접 돌봄 시간 환원';
-        elements.esgTime.parentElement.querySelector('.esg-sub').textContent = '시설 평가 문서 자동화에 따른 절감';
-    }
+    if (elements.esgCo2) elements.esgCo2.textContent = `${co2Saved}kg`;
+    if (elements.esgTime) elements.esgTime.textContent = `${savedHours}시간`;
+    if (elements.esgLocal) elements.esgLocal.textContent = state.currentMode === 'family' ? '75%' : (state.currentFacility === 'child' ? '45%' : '60%');
 }
 
-// System API settings modal
 function initApiConfig() {
-    elements.apiKeyInput.value = apiConfig.key;
-    elements.apiModelSelect.value = apiConfig.model;
+    if (elements.apiKeyInput) elements.apiKeyInput.value = apiConfig.key;
+    if (elements.apiModelSelect) elements.apiModelSelect.value = apiConfig.model;
 
-    elements.toggleKeyVisibilityBtn.addEventListener('click', () => {
-        const type = elements.apiKeyInput.type === 'password' ? 'text' : 'password';
-        elements.apiKeyInput.type = type;
-        elements.toggleKeyVisibilityBtn.innerHTML = type === 'password' ? '<i class="fa-solid fa-eye"></i>' : '<i class="fa-solid fa-eye-slash"></i>';
-    });
+    if (elements.toggleKeyVisibilityBtn) {
+        elements.toggleKeyVisibilityBtn.addEventListener('click', () => {
+            if (!elements.apiKeyInput) return;
+            const type = elements.apiKeyInput.type === 'password' ? 'text' : 'password';
+            elements.apiKeyInput.type = type;
+            elements.toggleKeyVisibilityBtn.innerHTML = type === 'password' ? '<i class="fa-solid fa-eye"></i>' : '<i class="fa-solid fa-eye-slash"></i>';
+        });
+    }
 
-    elements.resetApiKeyBtn.addEventListener('click', () => {
-        elements.apiKeyInput.value = '';
-        apiConfig.key = '';
-        localStorage.removeItem('OPENROUTER_API');
-        updateApiStatusUI();
-        showNotification("오픈라우터 API Key가 삭제되었습니다. 데모 시뮬레이션 모드로 작동합니다.");
-    });
-
-    elements.apiConfigForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        
-        const key = elements.apiKeyInput.value.trim();
-        const model = elements.apiModelSelect.value;
-        
-        apiConfig.key = key;
-        apiConfig.model = model;
-        
-        if (key) {
-            localStorage.setItem('OPENROUTER_API', key);
-            localStorage.setItem('caremeal_api_model', model);
-            showNotification("오픈라우터 무료 AI 연동 및 자동 폴백 체인 구성완료!");
-        } else {
+    if (elements.resetApiKeyBtn) {
+        elements.resetApiKeyBtn.addEventListener('click', () => {
+            if (elements.apiKeyInput) elements.apiKeyInput.value = '';
+            apiConfig.key = '';
             localStorage.removeItem('OPENROUTER_API');
-            showNotification("API Key가 비어있어 로컬 시뮬레이션 모드로 전환되었습니다.");
-        }
-        
-        updateApiStatusUI();
-    });
+            updateApiStatusUI();
+            showNotification("오픈라우터 API Key가 삭제되었습니다. 데모 시뮬레이션 모드로 작동합니다.");
+        });
+    }
+
+    if (elements.apiConfigForm) {
+        elements.apiConfigForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const key = elements.apiKeyInput ? elements.apiKeyInput.value.trim() : '';
+            const model = elements.apiModelSelect ? elements.apiModelSelect.value : 'nvidia/llama-3.1-nemotron-70b-instruct:free';
+            
+            apiConfig.key = key;
+            apiConfig.model = model;
+            
+            if (key) {
+                localStorage.setItem('OPENROUTER_API', key);
+                localStorage.setItem('caremeal_api_model', model);
+                showNotification("오픈라우터 무료 AI 연동 및 자동 폴백 체인 구성완료!");
+            } else {
+                localStorage.removeItem('OPENROUTER_API');
+                showNotification("API Key가 비어있어 로컬 시뮬레이션 모드로 전환되었습니다.");
+            }
+            
+            updateApiStatusUI();
+        });
+    }
 }
 
 function updateApiStatusUI() {
-    if (apiConfig.key) {
-        elements.apiStatusBadge.className = 'api-status live-connected';
-        elements.apiStatusText.textContent = `AI 연동: 폴백 체인`;
-        elements.analyzerModelIndicator.textContent = `${apiConfig.model.split('/')[1] || apiConfig.model} (실시간 AI 우선 연동)`;
-    } else {
-        elements.apiStatusBadge.className = 'api-status online';
-        elements.apiStatusText.textContent = 'AI: 시뮬레이션 모드';
-        elements.analyzerModelIndicator.textContent = 'Nemotron-70B / Llama-3 (시뮬레이션 폴백 모드)';
+    if (elements.apiStatusBadge && elements.apiStatusText) {
+        if (apiConfig.key) {
+            elements.apiStatusBadge.className = 'api-status live-connected';
+            elements.apiStatusText.textContent = `AI 연동: 폴백 체인`;
+            if (elements.analyzerModelIndicator) elements.analyzerModelIndicator.textContent = `${apiConfig.model.split('/')[1] || apiConfig.model} (실시간 AI 우선 연동)`;
+        } else {
+            elements.apiStatusBadge.className = 'api-status online';
+            elements.apiStatusText.textContent = 'AI: 시뮬레이션 모드';
+            if (elements.analyzerModelIndicator) elements.analyzerModelIndicator.textContent = 'Nemotron-70B / Llama-3 (시뮬레이션 폴백 모드)';
+        }
     }
 }
 
-// Chart.js updates
 function updateCharts() {
-    const isDark = document.body.classList.contains('dark-mode');
-    const labelColor = isDark ? '#94a3b8' : '#4b5563';
-    const gridColor = isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.06)';
-
-    Chart.defaults.color = labelColor;
-    Chart.defaults.font.family = 'Outfit';
-
-    // 1. Dashboard Doughnut
-    const dashCanvas = document.getElementById('dashboardChart');
-    if (dashCanvas) {
-        if (state.charts.dashboard) state.charts.dashboard.destroy();
-        state.charts.dashboard = new Chart(dashCanvas, {
-            type: 'doughnut',
-            data: {
-                labels: ['정상', '주의', '위험'],
-                datasets: [{
-                    data: [10, 3, 2],
-                    backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
-                    borderWidth: isDark ? 2 : 1,
-                    borderColor: isDark ? '#0f1322' : '#ffffff'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                cutout: '72%'
-            }
-        });
+    if (typeof Chart === 'undefined') {
+        console.warn('Chart.js is not loaded yet.');
+        return;
     }
 
-    // 2. Stats Doughnut
-    const statsDoughnutCanvas = document.getElementById('statsDoughnutChart');
-    if (statsDoughnutCanvas) {
-        if (state.charts.statsDoughnut) state.charts.statsDoughnut.destroy();
-        state.charts.statsDoughnut = new Chart(statsDoughnutCanvas, {
-            type: 'doughnut',
-            data: {
-                labels: ['주의', '위험', '안내'],
-                datasets: [{
-                    data: [28, 12, 5],
-                    backgroundColor: ['#fbbf24', '#f43f5e', '#3b82f6'],
-                    borderWidth: isDark ? 2 : 1,
-                    borderColor: isDark ? '#0f1322' : '#ffffff'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: { boxWidth: 10, padding: 8, font: { size: 10 } }
-                    }
+    try {
+        const isDark = document.body.classList.contains('dark-mode');
+        const labelColor = isDark ? '#94a3b8' : '#4b5563';
+        const gridColor = isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.06)';
+
+        Chart.defaults.color = labelColor;
+        Chart.defaults.font.family = 'Outfit';
+
+        // 1. Dashboard Doughnut
+        const dashCanvas = document.getElementById('dashboardChart');
+        if (dashCanvas) {
+            if (state.charts.dashboard) state.charts.dashboard.destroy();
+            state.charts.dashboard = new Chart(dashCanvas, {
+                type: 'doughnut',
+                data: {
+                    labels: ['정상', '주의', '위험'],
+                    datasets: [{
+                        data: [10, 3, 2],
+                        backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
+                        borderWidth: isDark ? 2 : 1,
+                        borderColor: isDark ? '#0f1322' : '#ffffff'
+                    }]
                 },
-                cutout: '65%'
-            }
-        });
-    }
-
-    // 3. Stats Pie
-    const statsPieCanvas = document.getElementById('statsPieChart');
-    if (statsPieCanvas) {
-        if (state.charts.statsPie) state.charts.statsPie.destroy();
-        state.charts.statsPie = new Chart(statsPieCanvas, {
-            type: 'pie',
-            data: {
-                labels: ['알레르기', '영양 불균형', '식중독 위험', '질환별 적합성'],
-                datasets: [{
-                    data: [35, 30, 20, 15],
-                    backgroundColor: ['#ef4444', '#f59e0b', '#10b981', '#8b5cf6'],
-                    borderWidth: isDark ? 2 : 1,
-                    borderColor: isDark ? '#0f1322' : '#ffffff'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: { boxWidth: 10, padding: 8, font: { size: 10 } }
-                    }
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    cutout: '72%'
                 }
-            }
-        });
-    }
+            });
+        }
 
-    // 4. ESG Line Chart
-    const esgCanvas = document.getElementById('esgChart');
-    if (esgCanvas) {
-        if (state.charts.esg) state.charts.esg.destroy();
-        const lineLabel1 = state.currentMode === 'family' ? '자율 관리 시간 (H)' : '행정 돌봄 환원 시간 (H)';
-        const lineLabel2 = state.currentMode === 'family' ? '가정 탄소 배출량 (kg)' : '누적 탄소 절감 (kg)';
-
-        state.charts.esg = new Chart(esgCanvas, {
-            type: 'line',
-            data: {
-                labels: ['1월', '2월', '3월', '4월', '5월', '6월(예정)'],
-                datasets: [
-                    {
-                        label: lineLabel1,
-                        data: [20, 35, 52, 68, 84, 105],
-                        borderColor: '#3b82f6',
-                        backgroundColor: 'rgba(59, 130, 246, 0.05)',
-                        tension: 0.4,
-                        fill: true
+        // 2. Stats Doughnut
+        const statsDoughnutCanvas = document.getElementById('statsDoughnutChart');
+        if (statsDoughnutCanvas) {
+            if (state.charts.statsDoughnut) state.charts.statsDoughnut.destroy();
+            state.charts.statsDoughnut = new Chart(statsDoughnutCanvas, {
+                type: 'doughnut',
+                data: {
+                    labels: ['주의', '위험', '안내'],
+                    datasets: [{
+                        data: [28, 12, 5],
+                        backgroundColor: ['#fbbf24', '#f43f5e', '#3b82f6'],
+                        borderWidth: isDark ? 2 : 1,
+                        borderColor: isDark ? '#0f1322' : '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { boxWidth: 10, padding: 8, font: { size: 10 } }
+                        }
                     },
-                    {
-                        label: lineLabel2,
-                        data: [50, 95, 140, 190, 240, 310],
-                        borderColor: '#10b981',
-                        backgroundColor: 'rgba(16, 185, 129, 0.05)',
-                        tension: 0.4,
-                        fill: true
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'top',
-                        labels: { boxWidth: 10, font: { size: 10 } }
-                    }
-                },
-                scales: {
-                    x: { grid: { display: false } },
-                    y: { grid: { color: gridColor } }
+                    cutout: '65%'
                 }
-            }
-        });
+            });
+        }
+
+        // 3. Stats Pie
+        const statsPieCanvas = document.getElementById('statsPieChart');
+        if (statsPieCanvas) {
+            if (state.charts.statsPie) state.charts.statsPie.destroy();
+            state.charts.statsPie = new Chart(statsPieCanvas, {
+                type: 'pie',
+                data: {
+                    labels: ['알레르기', '영양 불균형', '식중독 위험', '질환별 적합성'],
+                    datasets: [{
+                        data: [35, 30, 20, 15],
+                        backgroundColor: ['#ef4444', '#f59e0b', '#10b981', '#8b5cf6'],
+                        borderWidth: isDark ? 2 : 1,
+                        borderColor: isDark ? '#0f1322' : '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { boxWidth: 10, padding: 8, font: { size: 10 } }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 4. ESG Line Chart
+        const esgCanvas = document.getElementById('esgChart');
+        if (esgCanvas) {
+            if (state.charts.esg) state.charts.esg.destroy();
+            const lineLabel1 = state.currentMode === 'family' ? '자율 관리 시간 (H)' : '행정 돌봄 환원 시간 (H)';
+            const lineLabel2 = state.currentMode === 'family' ? '가정 탄소 배출량 (kg)' : '누적 탄소 절감 (kg)';
+
+            state.charts.esg = new Chart(esgCanvas, {
+                type: 'line',
+                data: {
+                    labels: ['1월', '2월', '3월', '4월', '5월', '6월(예정)'],
+                    datasets: [
+                        {
+                            label: lineLabel1,
+                            data: [20, 35, 52, 68, 84, 105],
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.05)',
+                            tension: 0.4,
+                            fill: true
+                        },
+                        {
+                            label: lineLabel2,
+                            data: [50, 95, 140, 190, 240, 310],
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.05)',
+                            tension: 0.4,
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: { boxWidth: 10, font: { size: 10 } }
+                        }
+                    },
+                    scales: {
+                        x: { grid: { display: false } },
+                        y: { grid: { color: gridColor } }
+                    }
+                }
+            });
+        }
+    } catch (e) {
+        console.error('Error drawing charts:', e);
     }
 }
 
-// Global UI toast notification
 function showNotification(message) {
-    // Delete any existing toast
     const oldToast = document.querySelector('.toast-notification');
     if (oldToast) oldToast.remove();
 
@@ -1924,11 +2009,8 @@ function showNotification(message) {
     `;
     
     document.body.appendChild(toast);
-    
-    // Animate
     setTimeout(() => toast.classList.add('show'), 100);
     
-    // Hide
     setTimeout(() => {
         toast.classList.remove('show');
         setTimeout(() => toast.remove(), 400);

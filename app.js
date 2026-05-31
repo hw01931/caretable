@@ -71,13 +71,10 @@ const elements = {
     // Stats
     statTotalMembers: document.getElementById('stat-total-members'),
     statRiskMembers: document.getElementById('stat-risk-members'),
-    statSavedTime: document.getElementById('stat-saved-time'),
     statSafetyScore: document.getElementById('stat-safety-score'),
     
     lblTotalMembers: document.getElementById('lbl-total-members'),
     lblTotalDesc: document.getElementById('lbl-total-desc'),
-    lblSavedTime: document.getElementById('lbl-saved-time'),
-    lblSavedDesc: document.getElementById('lbl-saved-desc'),
     esgBottomDesc: document.getElementById('esg-bottom-desc'),
     
     // GNB & API Connection Status
@@ -266,28 +263,28 @@ function applyModeTheme() {
         elements.modeTextLeft.classList.remove('active-mode');
         elements.modeTextRight.classList.add('active-mode');
         elements.facilitySelectorWrapper.classList.add('hidden');
-        elements.mainBadge.textContent = '가족 건강 관리 모드';
+        elements.mainBadge.textContent = '일반 소비자 모드';
         elements.mainBadge.style.background = 'rgba(124, 58, 237, 0.08)';
         elements.mainBadge.style.borderColor = 'rgba(124, 58, 237, 0.2)';
         elements.mainBadge.style.color = '#7c3aed';
         
-        elements.userAvatarInitial.textContent = '가';
-        elements.userDisplayName.textContent = '엄마/아빠';
-        elements.userDisplayRole.textContent = '우리 집 영양 안심 케어';
+        elements.userAvatarInitial.textContent = '게';
+        elements.userDisplayName.textContent = '게스트 (가정)';
+        elements.userDisplayRole.textContent = '일반 사용자 케어 모드';
         
         elements.navReportBtn.innerHTML = '<i class="fa-solid fa-file-invoice"></i> <span>안전 증빙 일지</span>';
     } else {
         elements.modeTextLeft.classList.add('active-mode');
         elements.modeTextRight.classList.remove('active-mode');
         elements.facilitySelectorWrapper.classList.remove('hidden');
-        elements.mainBadge.textContent = '사보원 공공데이터 연계';
+        elements.mainBadge.textContent = '게스트 기관 모드';
         elements.mainBadge.style.background = 'rgba(37, 99, 235, 0.08)';
         elements.mainBadge.style.borderColor = 'rgba(37, 99, 235, 0.2)';
         elements.mainBadge.style.color = 'var(--color-blue)';
         
-        elements.userAvatarInitial.textContent = '복';
-        elements.userDisplayName.textContent = '박아름 사회복지사';
-        elements.userDisplayRole.textContent = '마포구 시설 운영대표';
+        elements.userAvatarInitial.textContent = '게';
+        elements.userDisplayName.textContent = '게스트 (기관)';
+        elements.userDisplayRole.textContent = '미지정 자유 이용 모드';
         elements.navReportBtn.innerHTML = '<i class="fa-solid fa-file-shield"></i> <span>평가 증빙 & ESG</span>';
     }
 }
@@ -376,16 +373,12 @@ function renderDashboard() {
     if (state.currentMode === 'family') {
         elements.lblTotalMembers.textContent = '가족 등록 인원';
         elements.lblTotalDesc.innerHTML = '<i class="fa-solid fa-house"></i> 가정용 프로필 기준';
-        elements.lblSavedTime.textContent = '가사 노동 및 행정 절감 시간';
-        elements.lblSavedDesc.innerHTML = '<i class="fa-solid fa-clock"></i> 식단 작성 및 증빙 자동화 효과';
         elements.panelMemberTitle.innerHTML = '<i class="fa-solid fa-people-roof"></i> 가족 구성원 건강/알레르기 DB';
         elements.esgBottomDesc.textContent = '친환경 로컬 식단 구성 및 식료품 소비 데이터 연동을 통해 에코 탄소 마일리지 120kg CO2e 감축 기여';
         elements.modalMemberTitle.innerHTML = '<i class="fa-solid fa-house-chimney-medical"></i> 가족 건강 프로필 신규 등록';
     } else {
         elements.lblTotalMembers.textContent = '관리 대상자 수';
         elements.lblTotalDesc.innerHTML = '<i class="fa-solid fa-circle-info"></i> 사보원 데이터 기준';
-        elements.lblSavedTime.textContent = '누적 행정 절감 시간';
-        elements.lblSavedDesc.innerHTML = '<i class="fa-solid fa-arrow-trend-up"></i> 돌봄 시간으로 환원됨';
         elements.panelMemberTitle.innerHTML = '<i class="fa-solid fa-id-card"></i> 대상자 집중 관리 명단';
         elements.esgBottomDesc.textContent = '친환경 저탄소 식단 추천 및 페이퍼리스 행정 자동화를 통한 탄소 발자국 240kg CO2e 감축 달성';
         elements.modalMemberTitle.innerHTML = '<i class="fa-solid fa-user-plus"></i> 신규 관리 대상자 등록';
@@ -393,7 +386,6 @@ function renderDashboard() {
 
     elements.statTotalMembers.textContent = `${totalMembers}명`;
     elements.statRiskMembers.textContent = `${riskMembers}명`;
-    elements.statSavedTime.textContent = `${totalSavedTime}시간`;
     elements.statSafetyScore.textContent = riskMembers > 0 ? '100%' : '0%';
 
     elements.memberTableBody.innerHTML = '';

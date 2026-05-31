@@ -2,21 +2,9 @@
 
 // Global State Default Data Sets
 const defaultMembers = {
-    child: [
-        { id: 1, name: '김민수', age: '5세 / 남', type: '알레르기', detail: '달걀, 우유', instruction: '달걀/우유 성분 완전 차단 및 대체 간식 제공', status: 'care' },
-        { id: 2, name: '박예린', age: '6세 / 여', type: '알레르기', detail: '땅콩, 견과류', instruction: '견과류 함유 소스/조미료 전면 금지 및 대체 견과 무첨가 제품 사용', status: 'safe' },
-        { id: 3, name: '최지환', age: '4세 / 남', type: '알레르기', detail: '대두, 콩류', instruction: '간장, 된장 대체 소스 사용 및 콩 단백질 대체 반찬 제공', status: 'safe' }
-    ],
-    senior: [
-        { id: 1, name: '최옥분', age: '82세 / 여', type: '질환식', detail: '당뇨, 연하곤란 2단계', instruction: '저염/저당질 식사, 1.5cm 이하 다진식(Soft Food) 및 연하보조제 믹스 제공', status: 'care' },
-        { id: 2, name: '정순길', age: '78세 / 남', type: '질환식', detail: '신부전증 (칼륨 제한)', instruction: '나트륨 최소화, 생채소 섭취 금지(데친 채소 제공), 잡곡밥 대신 흰쌀밥 제공', status: 'care' },
-        { id: 3, name: '이명자', age: '85세 / 여', type: '질환식', detail: '유당불내증', instruction: '일반 우유/요구르트 급식 금지, 락토프리 우유 또는 대체 두유 제공', status: 'care' }
-    ],
-    family: [
-        { id: 1, name: '우리남편', age: '42세 / 남', type: '질환식', detail: '고혈압, 통풍', instruction: '나트륨 제한식, 퓨린이 많은 맥주/조개류 반찬 금지, 식이섬유 증량', status: 'care' },
-        { id: 2, name: '첫째딸', age: '8세 / 여', type: '알레르기', detail: '복숭아, 키위', instruction: '해당 과일 디저트 일절 배제 및 과일 칼 분리 사용 철저', status: 'safe' },
-        { id: 3, name: '막내아들', age: '5세 / 남', type: '알레르기', detail: '우유, 밀가루', instruction: '락토프리 유제품 급지 및 쌀식빵/글루텐프리 대체 베이킹 제공', status: 'care' }
-    ]
+    child: [],
+    senior: [],
+    family: []
 };
 
 const state = {
@@ -33,28 +21,7 @@ const state = {
     vlmApproved: false,
     
     // Database of logs to generate reports
-    logs: [
-        {
-            date: '2026-05-30',
-            menu: '보리밥, 계란국, 제육볶음, 두부조림, 오렌지주스',
-            facility: 'child',
-            target: '김민수 아동 (달걀/우유)',
-            alternative: '계란국 ➔ 맑은 무국 대체 제공',
-            guideline: '계란 조리 시 교차오염 방지용 독립 조리기구 사용',
-            vlmStatus: 'PASS',
-            timestamp: '2026-05-30 11:45'
-        },
-        {
-            date: '2026-05-30',
-            menu: '잡곡밥, 버섯국, 불고기, 고구마순나물, 요플레',
-            facility: 'senior',
-            target: '이명자 어르신 (유당불내증)',
-            alternative: '요플레 ➔ 락토프리 요거트 대체 제공',
-            guideline: '유제품 보관 구역 구별 및 라벨링 철저',
-            vlmStatus: 'PASS',
-            timestamp: '2026-05-30 11:52'
-        }
-    ],
+    logs: [],
     charts: {
         dashboard: null,
         esg: null
@@ -403,7 +370,8 @@ function renderDashboard() {
     const list = state.members[listKey];
     const totalMembers = list.length;
     const riskMembers = list.filter(m => m.type !== '일반').length;
-    const totalSavedTime = (state.logs.filter(l => state.currentMode === 'family' ? l.facility === 'family' : l.facility === state.currentFacility).length * 4.2).toFixed(1);
+    const currentLogs = state.logs.filter(l => state.currentMode === 'family' ? l.facility === 'family' : l.facility === state.currentFacility);
+    const totalSavedTime = (currentLogs.length * 4.2).toFixed(1);
     
     if (state.currentMode === 'family') {
         elements.lblTotalMembers.textContent = '가족 등록 인원';
@@ -426,7 +394,7 @@ function renderDashboard() {
     elements.statTotalMembers.textContent = `${totalMembers}명`;
     elements.statRiskMembers.textContent = `${riskMembers}명`;
     elements.statSavedTime.textContent = `${totalSavedTime}시간`;
-    elements.statSafetyScore.textContent = '100%';
+    elements.statSafetyScore.textContent = riskMembers > 0 ? '100%' : '0%';
 
     elements.memberTableBody.innerHTML = '';
     
@@ -451,6 +419,16 @@ function renderDashboard() {
         elements.memberTableBody.appendChild(tr);
     });
 }
+
+// Global delete member function linked from inline onclick handler
+window.deleteMember = function(id) {
+    const listKey = state.currentMode === 'family' ? 'family' : state.currentFacility;
+    state.members[listKey] = state.members[listKey].filter(m => m.id !== id);
+    saveDatabase(listKey);
+    renderDashboard();
+    updateCharts();
+    showNotification("선택한 관리 대상 프로필이 삭제되었습니다.");
+};
 
 // Facility switch logic for agency mode
 function initFacilitySelector() {

@@ -73,6 +73,10 @@ body {
     transition: background-color var(--transition-speed), color var(--transition-speed);
 }
 
+.hidden {
+    display: none !important;
+}
+
 /* App Container Layout */
 .app-container {
     display: flex;

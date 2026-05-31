@@ -30,21 +30,23 @@ const state = {
 
 // API settings configuration
 const apiConfig = {
-    key: localStorage.getItem('caremeal_api_key') || '',
+    key: localStorage.getItem('OPENROUTER_API') || localStorage.getItem('caremeal_api_key') || '',
     model: localStorage.getItem('caremeal_api_model') || 'nvidia/llama-3.1-nemotron-70b-instruct:free'
 };
 
 // OpenRouter Free Models for Fallback Strategy
 const freeLLMModels = [
-    "nvidia/llama-3.1-nemotron-70b-instruct:free",
-    "meta-llama/llama-3-8b-instruct:free",
-    "google/gemma-2-9b-it:free",
-    "mistralai/mistral-7b-instruct:free"
+    "deepseek/deepseek-v4-flash:free",
+    "qwen/qwen3-next-80b-a3b-instruct:free",
+    "meta-llama/llama-3.3-70b-instruct:free",
+    "google/gemma-4-26b-a4b:free",
+    "nvidia/llama-3.1-nemotron-70b-instruct:free"
 ];
 
 const freeVLMModels = [
-    "meta-llama/llama-3.2-11b-vision-instruct:free",
-    "qwen/qwen-2-vl-7b-instruct:free"
+    "google/gemma-4-26b-a4b:free",
+    "nvidia/nemotron-nano-12b-2-vl:free",
+    "meta-llama/llama-3.2-11b-vision-instruct:free"
 ];
 
 // DOM Elements
@@ -76,6 +78,8 @@ const elements = {
     lblTotalMembers: document.getElementById('lbl-total-members'),
     lblTotalDesc: document.getElementById('lbl-total-desc'),
     esgBottomDesc: document.getElementById('esg-bottom-desc'),
+    esgBadge: document.querySelector('.esg-badge'),
+    esgProgressFill: document.querySelector('.esg-progress-fill'),
     
     // GNB & API Connection Status
     openApiConfigBtn: document.getElementById('open-api-config-btn'),
@@ -370,17 +374,43 @@ function renderDashboard() {
     const currentLogs = state.logs.filter(l => state.currentMode === 'family' ? l.facility === 'family' : l.facility === state.currentFacility);
     const totalSavedTime = (currentLogs.length * 4.2).toFixed(1);
     
+    // Compute Dynamic ESG Score from verified logs count
+    const logCount = currentLogs.length;
+    let esgGrade = 'D 등급';
+    let progressWidth = '10%';
+    let carbonSavings = (logCount * 12.0).toFixed(1);
+    
+    if (logCount >= 10) {
+        esgGrade = 'A+ 등급';
+        progressWidth = '95%';
+    } else if (logCount >= 7) {
+        esgGrade = 'A 등급';
+        progressWidth = '80%';
+    } else if (logCount >= 5) {
+        esgGrade = 'B 등급';
+        progressWidth = '65%';
+    } else if (logCount >= 3) {
+        esgGrade = 'C 등급';
+        progressWidth = '45%';
+    } else if (logCount >= 1) {
+        esgGrade = 'C- 등급';
+        progressWidth = '25%';
+    }
+
+    if (elements.esgBadge) elements.esgBadge.textContent = esgGrade;
+    if (elements.esgProgressFill) elements.esgProgressFill.style.width = progressWidth;
+
     if (state.currentMode === 'family') {
         elements.lblTotalMembers.textContent = '가족 등록 인원';
         elements.lblTotalDesc.innerHTML = '<i class="fa-solid fa-house"></i> 가정용 프로필 기준';
         elements.panelMemberTitle.innerHTML = '<i class="fa-solid fa-people-roof"></i> 가족 구성원 건강/알레르기 DB';
-        elements.esgBottomDesc.textContent = '친환경 로컬 식단 구성 및 식료품 소비 데이터 연동을 통해 에코 탄소 마일리지 120kg CO2e 감축 기여';
+        elements.esgBottomDesc.textContent = `가정 내 안전 대체식 식단 조율 및 영양 일지 종이 절약을 통해 누적 ${carbonSavings}kg CO2e 탄소 배출량 감축 기여`;
         elements.modalMemberTitle.innerHTML = '<i class="fa-solid fa-house-chimney-medical"></i> 가족 건강 프로필 신규 등록';
     } else {
         elements.lblTotalMembers.textContent = '관리 대상자 수';
         elements.lblTotalDesc.innerHTML = '<i class="fa-solid fa-circle-info"></i> 사보원 데이터 기준';
         elements.panelMemberTitle.innerHTML = '<i class="fa-solid fa-id-card"></i> 대상자 집중 관리 명단';
-        elements.esgBottomDesc.textContent = '친환경 저탄소 식단 추천 및 페이퍼리스 행정 자동화를 통한 탄소 발자국 240kg CO2e 감축 달성';
+        elements.esgBottomDesc.textContent = `종이 급식 증빙 일지 자동 대장화 및 친환경 로컬 레시피 추천으로 탄소 발자국 ${carbonSavings}kg CO2e 감축 달성`;
         elements.modalMemberTitle.innerHTML = '<i class="fa-solid fa-user-plus"></i> 신규 관리 대상자 등록';
     }
 
@@ -1295,11 +1325,13 @@ function renderReport() {
 
 // 8. API configuration modal functions
 function initApiConfig() {
-    elements.openApiConfigBtn.addEventListener('click', () => {
-        elements.apiKeyInput.value = apiConfig.key;
-        elements.apiModelSelect.value = apiConfig.model;
-        elements.apiConfigModal.classList.remove('hidden');
-    });
+    if (elements.openApiConfigBtn) {
+        elements.openApiConfigBtn.addEventListener('click', () => {
+            elements.apiKeyInput.value = apiConfig.key;
+            elements.apiModelSelect.value = apiConfig.model;
+            elements.apiConfigModal.classList.remove('hidden');
+        });
+    }
 
     elements.closeApiModalBtn.addEventListener('click', closeApiModal);
 
@@ -1351,12 +1383,12 @@ function closeApiModal() {
 
 function updateApiStatusUI() {
     if (apiConfig.key) {
-        elements.apiStatusBadge.className = 'api-status live-connected';
-        elements.apiStatusText.textContent = `AI 연동: 폴백 체인`;
+        if (elements.apiStatusBadge) elements.apiStatusBadge.className = 'api-status live-connected';
+        if (elements.apiStatusText) elements.apiStatusText.textContent = `AI 연동: 폴백 체인`;
         elements.analyzerModelIndicator.textContent = `${apiConfig.model.split('/')[1] || apiConfig.model} (실시간 무료 AI 폴백 활성화)`;
     } else {
-        elements.apiStatusBadge.className = 'api-status online';
-        elements.apiStatusText.textContent = 'AI: 시뮬레이션 모드';
+        if (elements.apiStatusBadge) elements.apiStatusBadge.className = 'api-status online';
+        if (elements.apiStatusText) elements.apiStatusText.textContent = 'AI: 시뮬레이션 모드';
         elements.analyzerModelIndicator.textContent = 'Nemotron-70B / Llama-3 (시뮬레이션 폴백 모드)';
     }
 }

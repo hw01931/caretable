@@ -1,0 +1,31 @@
+name: Deploy to Hugging Face Spaces
+
+on:
+  push:
+    branches:
+      - main
+  # GitHub Actions 탭에서 수동 실행 허용
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup Git Credentials & Push to HF
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          # 본인의 Hugging Face Username 및 Space Name에 맞춰 변경하십시오.
+          HF_USERNAME: "HwangJinwook"
+          HF_SPACE_NAME: "caretable"
+        run: |
+          git config --global user.email "actions@github.com"
+          git config --global user.name "GitHub Actions"
+          
+          # Hugging Face Spaces Git Remote 추가 및 강제 푸시 (Docker 배포 진행)
+          git remote add hf https://$HF_USERNAME:$HF_TOKEN@huggingface.co/spaces/$HF_USERNAME/$HF_SPACE_NAME
+          git push --force hf main

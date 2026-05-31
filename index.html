@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CareTable - 취약계층 급식 위험 관리 및 평가 증빙 자동화 플랫폼</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-area">
+                    <i class="fa-solid fa-wand-magic-sparkles logo-icon"></i>
+                    <span class="logo-text">CareTable <span class="highlight">AI</span></span>
+                </div>
+                <div class="badge-tag" id="main-badge">사보원 공공데이터 연계</div>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <button class="nav-btn active" data-tab="dashboard">
+                    <i class="fa-solid fa-chart-pie"></i>
+                    <span id="nav-dash-text">종합 대시보드</span>
+                </button>
+                <button class="nav-btn" data-tab="diet-analyzer">
+                    <i class="fa-solid fa-calendar-days"></i>
+                    <span>주간/월간 식단 AI 분석</span>
+                </button>
+                <button class="nav-btn" data-tab="vlm-scanner">
+                    <i class="fa-solid fa-camera-retro"></i>
+                    <span>VLM 배식 검증</span>
+                </button>
+                <button class="nav-btn" data-tab="report-generator" id="nav-report-btn">
+                    <i class="fa-solid fa-file-shield"></i>
+                    <span>평가 증빙 & ESG</span>
+                </button>
+            </nav>
+
+            <div class="sidebar-footer">
+                <!-- Mode Toggle -->
+                <div class="mode-switch-container">
+                    <span class="mode-label"><i class="fa-solid fa-toggle-on"></i> 사용 모드 전환</span>
+                    <div class="toggle-switch-wrapper">
+                        <span class="toggle-mode-text" id="mode-text-left">기관</span>
+                        <label class="switch">
+                            <input type="checkbox" id="mode-toggle-checkbox">
+                            <span class="slider round"></span>
+                        </label>
+                        <span class="toggle-mode-text" id="mode-text-right">가정</span>
+                    </div>
+                </div>
+
+                <div class="facility-selector" id="facility-selector-wrapper">
+                    <label for="facility-select"><i class="fa-solid fa-house-medical"></i> 대상 시설 관리</label>
+                    <select id="facility-select">
+                        <option value="child" selected>튼튼어린이집 (보육시설)</option>
+                        <option value="senior">행복실버요양원 (노인시설)</option>
+                    </select>
+                </div>
+                
+                <div class="user-profile">
+                    <div class="user-avatar" id="user-avatar-initial">복</div>
+                    <div class="user-info">
+                        <span class="user-name" id="user-display-name">박아름 사회복지사</span>
+                        <span class="user-role" id="user-display-role">마포구 시설 운영대표</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Top GNB -->
+            <header class="top-gnb">
+                <div class="page-title-area">
+                    <h1 id="page-main-title">종합 대시보드</h1>
+                    <p id="page-sub-title">시설 맞춤형 프로파일 및 취약계층 급식 위험 관리 요약</p>
+                </div>
+                <div class="status-panel">
+                    <button class="theme-toggle-btn" id="theme-toggle-btn">
+                        <i class="fa-solid fa-moon"></i> <span id="theme-toggle-text">다크 모드</span>
+                    </button>
+                    <button class="config-btn" id="open-api-config-btn">
+                        <i class="fa-solid fa-gears"></i> <span>오픈라우터 AI 연동</span>
+                    </button>
+                    <div class="api-status online" id="api-status-badge">
+                        <span class="status-dot"></span>
+                        <span id="api-status-text">AI: 시뮬레이션 모드</span>
+                    </div>
+                    <div class="notification-bell">
+                        <i class="fa-regular fa-bell"></i>
+                        <span class="noti-count" id="noti-count-badge">2</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Dashboard Tab -->
+            <section id="dashboard" class="tab-content active-tab">
+                <!-- Info Cards Grid -->
+                <div class="stats-grid">
+                    <div class="stat-card glass-card animate-fade-in">
+                        <div class="card-icon-wrapper blue">
+                            <i class="fa-solid fa-users"></i>
+                        </div>
+                        <div class="stat-data">
+                            <span class="stat-label" id="lbl-total-members">관리 대상자 수</span>
+                            <h3 id="stat-total-members" class="stat-value">42명</h3>
+                            <span class="stat-trend positive" id="lbl-total-desc"><i class="fa-solid fa-circle-info"></i> 사보원 데이터 기준</span>
+                        </div>
+                    </div>
+                    <div class="stat-card glass-card animate-fade-in" style="animation-delay: 0.1s;">
+                        <div class="card-icon-wrapper red">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                        </div>
+                        <div class="stat-data">
+                            <span class="stat-label">위험 관리군 (알레르기/질환)</span>
+                            <h3 id="stat-risk-members" class="stat-value">5명</h3>
+                            <span class="stat-trend alert-color"><i class="fa-solid fa-circle-exclamation"></i> 개인별 집중 관리 요망</span>
+                        </div>
+                    </div>
+                    <div class="stat-card glass-card animate-fade-in" style="animation-delay: 0.2s;">
+                        <div class="card-icon-wrapper green">
+                            <i class="fa-solid fa-clock-rotate-left"></i>
+                        </div>
+                        <div class="stat-data">
+                            <span class="stat-label" id="lbl-saved-time">누적 행정 절감 시간</span>
+                            <h3 id="stat-saved-time" class="stat-value">84시간</h3>
+                            <span class="stat-trend positive" id="lbl-saved-desc"><i class="fa-solid fa-arrow-trend-up"></i> 돌봄 시간으로 환원됨</span>
+                        </div>
+                    </div>
+                    <div class="stat-card glass-card animate-fade-in" style="animation-delay: 0.3s;">
+                        <div class="card-icon-wrapper yellow">
+                            <i class="fa-solid fa-shield-halved"></i>
+                        </div>
+                        <div class="stat-data">
+                            <span class="stat-label">급식 안전 무결성 점수</span>
+                            <h3 id="stat-safety-score" class="stat-value">100%</h3>
+                            <span class="stat-trend positive"><i class="fa-solid fa-shield-check"></i> 사고 0건 달성</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Middle Content Section -->
+                <div class="content-row">
+                    <!-- Left: Facility Profile & Person management -->
+                    <div class="panel-col glass-card">
+                        <div class="panel-header">
+                            <h2 class="panel-title" id="panel-member-title"><i class="fa-solid fa-id-card"></i> 대상자 집중 관리 명단</h2>
+                            <button class="add-member-btn" id="add-member-btn"><i class="fa-solid fa-plus"></i> 대상 추가</button>
+                        </div>
+                        <div class="table-container">
+                            <table class="data-table" id="member-table">
+                                <thead>
+                                    <tr>
+                                        <th>이름</th>
+                                        <th>연령/성별</th>
+                                        <th>위험 요인 (알레르기/질환)</th>
+                                        <th>맞춤 식이 지침</th>
+                                        <th>조작</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="member-table-body">
+                                    <!-- Dynamic member data -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Right: Quick Analytics -->
+                    <div class="panel-col glass-card flex-col-35">
+                        <div class="panel-header">
+                            <h2 class="panel-title"><i class="fa-solid fa-chart-line"></i> 실시간 통계 분석</h2>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="dashboardChart"></canvas>
+                        </div>
+                        <div class="esg-score-box">
+                            <div class="esg-title-row">
+                                <span class="esg-title"><i class="fa-solid fa-leaf text-green"></i> CareTable ESG 혁신 지표</span>
+                                <span class="esg-badge">A+ 등급</span>
+                            </div>
+                            <div class="esg-progress-bar">
+                                <div class="esg-progress-fill" style="width: 92%;"></div>
+                            </div>
+                            <p class="esg-desc" id="esg-bottom-desc">친환경 저탄소 식단 추천 및 페이퍼리스 행정 자동화를 통한 탄소 발자국 240kg CO2e 감축 달성</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Diet Analyzer Tab -->
+            <section id="diet-analyzer" class="tab-content">
+                <div class="vertical-layout-wrapper">
+                    <!-- Input Section -->
+                    <div class="glass-card full-width-panel margin-bottom-24">
+                        <div class="panel-header">
+                            <h2 class="panel-title"><i class="fa-solid fa-calendar-plus"></i> 주간/월간 식단표 입력 (대량 식단 스캔)</h2>
+                            <div class="quick-examples">
+                                <span class="example-tag active" data-period="weekly">1주일 식단 템플릿</span>
+                                <span class="example-tag" data-period="monthly">1개월 식단 템플릿</span>
+                            </div>
+                        </div>
+                        <div class="diet-input-area">
+                            <label class="form-label">날짜(또는 요일)와 식단 내용을 입력하세요. 식재료는 쉼표로, 일자는 줄바꿈으로 구분합니다:</label>
+                            <textarea id="diet-bulk-input" class="diet-textarea large-textarea" placeholder="[월] 쌀밥, 계란말이, 어묵볶음, 요구르트&#10;[화] 잡곡밥, 된장국, 불고기, 고구마순나물, 생선구이&#10;[수] 잡곡밥, 닭볶음탕, 오징어채무침, 땅콩조림, 우유"></textarea>
+                            <div class="btn-row justify-between">
+                                <div class="model-status-info">
+                                    <i class="fa-solid fa-robot"></i> <span id="analyzer-model-indicator">DeepSeek V4 Flash (무료) 모델 우선 작동</span>
+                                </div>
+                                <button id="analyze-diet-btn" class="primary-btn"><i class="fa-solid fa-wand-magic-sparkles"></i> AI 전체 식단 안전성 정밀 검사</button>
+                            </div>
+                        </div>
+
+                        <!-- Analysis Loading State (hidden by default) -->
+                        <div id="analyzer-loading" class="analyzer-loading hidden">
+                            <div class="spinner"></div>
+                            <p id="loading-text">OpenRouter AI 모델에 통신 중입니다. 실시간 식자재 영양 분석 및 위험 요인 매칭 중...</p>
+                        </div>
+                    </div>
+
+                    <!-- Output Schedule View (hidden by default, shown after analysis) -->
+                    <div id="schedule-result-view" class="hidden animate-fade-in">
+                        <div class="result-header-summary glass-card margin-bottom-24">
+                            <div class="summary-status-badge alert-red" id="schedule-status-banner">
+                                <i class="fa-solid fa-circle-exclamation text-red animate-bounce"></i>
+                                <div>
+                                    <h4 id="schedule-summary-title">위험 식단 감지됨</h4>
+                                    <p id="schedule-summary-desc">총 5일의 식단 중 2일의 식단에서 등록 수혜자 알레르기/질환 유발 성분이 발견되어 자동 대체식을 처방했습니다.</p>
+                                </div>
+                            </div>
+                            <div class="btn-row">
+                                <button id="confirm-all-diet-btn" class="primary-btn"><i class="fa-solid fa-circle-check"></i> 전체 식단 확정 및 VLM 배식 검증 대기</button>
+                            </div>
+                        </div>
+
+                        <!-- Calendar / Timelime Cards Grid -->
+                        <div class="schedule-grid" id="schedule-cards-container">
+                            <!-- Dynamic Cards generated via JS -->
+                        </div>
+                    </div>
+
+                    <!-- Empty State for results -->
+                    <div id="schedule-empty-view" class="glass-card empty-state-view">
+                        <i class="fa-solid fa-magnifying-glass-chart"></i>
+                        <h3>식단 분석 대기 중</h3>
+                        <p>위 텍스트 영역에 주간/월간 식단표를 넣고 분석 버튼을 누르면, 일자별 대체 식단표와 AI 안전 조리 지침이 타임라인 카드 뷰로 보기 좋게 자동 생성됩니다.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VLM Verification Tab -->
+            <section id="vlm-scanner" class="tab-content">
+                <div class="content-row">
+                    <!-- Scanner camera panel -->
+                    <div class="panel-col glass-card">
+                        <div class="panel-header">
+                            <h2 class="panel-title"><i class="fa-solid fa-camera"></i> VLM(Vision-Language Model) 실시간 배식 모니터</h2>
+                            <button class="add-member-btn" id="trigger-file-btn"><i class="fa-solid fa-upload"></i> 식판 사진 직접 업로드</button>
+                            <input type="file" id="vlm-file-input" accept="image/*" class="hidden">
+                        </div>
+                        
+                        <div class="vlm-monitor-layout">
+                            <!-- Left: Camera Box -->
+                            <div class="camera-simulator-box">
+                                <div class="camera-lens-overlay">
+                                    <div class="lens-crosshair"></div>
+                                    <div class="scanner-laser" id="scanner-laser"></div>
+                                    <div class="camera-badge">CAMERA LIVE</div>
+                                </div>
+                                <div class="image-viewport" id="image-viewport">
+                                    <div class="viewport-placeholder">
+                                        <i class="fa-solid fa-image"></i>
+                                        <p>아래에서 시뮬레이션 이미지를 선택하거나 직접 식판 사진을 업로드하세요</p>
+                                    </div>
+                                    <img id="vlm-target-image" src="" alt="식판 사진" class="hidden">
+                                </div>
+                            </div>
+                            
+                            <!-- Right: Operations -->
+                            <div class="vlm-ops-panel">
+                                <h3>배식 모니터링 식판 이미지 매칭</h3>
+                                <p class="vlm-desc">검증할 식판 사진을 준비해 주십시오. (성공/실패 데모를 즉시 실행할 수 있습니다.)</p>
+                                <div class="sim-selector-grid">
+                                    <div class="sim-option-card" id="sim-opt-normal" data-type="normal">
+                                        <div class="sim-img-thumb-container">
+                                            <img src="assets/meal_normal.png" alt="일반 식단 (대체식 미적용)">
+                                        </div>
+                                        <div class="sim-info">
+                                            <span class="sim-title">일반 배식 식판</span>
+                                            <span class="sim-badge danger-badge">달걀말이/요구르트 포함</span>
+                                        </div>
+                                    </div>
+                                    <div class="sim-option-card" id="sim-opt-alternative" data-type="alternative">
+                                        <div class="sim-img-thumb-container">
+                                            <img src="assets/meal_alternative.png" alt="대체 식단 (두부, 주스 적용)">
+                                        </div>
+                                        <div class="sim-info">
+                                            <span class="sim-title">대체 배식 식판</span>
+                                            <span class="sim-badge success-badge">두부구이/주스 변경완료</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="scan-action-row">
+                                    <button id="run-vlm-btn" class="primary-btn large-btn" disabled>
+                                        <i class="fa-solid fa-cube"></i> VLM 배식 사진 분석 & 검증 시작
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- VLM Verification Results -->
+                    <div class="panel-col glass-card flex-col-40">
+                        <div class="panel-header">
+                            <h2 class="panel-title"><i class="fa-solid fa-circle-info"></i> AI Vision 매칭 및 실시간 분석 결과</h2>
+                        </div>
+                        
+                        <div id="vlm-empty-result" class="empty-state-view">
+                            <i class="fa-solid fa-magnifying-glass-chart"></i>
+                            <p>식판 사진을 선택하고 VLM 분석을 시작하면 배식 식단 매칭성, 유해 알레르기 물질 탐지, 배식 가부 판정 결과가 표시됩니다.</p>
+                        </div>
+                        
+                        <!-- Real VLM result panel (hidden by default) -->
+                        <div id="vlm-result-panel" class="vlm-result-panel hidden animate-fade-in">
+                            <div class="vlm-verdict-box" id="vlm-verdict-box">
+                                <div class="verdict-icon" id="verdict-icon-container">
+                                    <!-- Dynamic verdict icon -->
+                                </div>
+                                <div class="verdict-text-area">
+                                    <span class="verdict-lbl">VLM 배식 검증 결과</span>
+                                    <h3 id="verdict-title">배식 보류 (REJECTED)</h3>
+                                </div>
+                            </div>
+
+                            <div class="matching-details-list">
+                                <div class="detail-item">
+                                    <span class="detail-label">식단 일치율 (Menu Matching)</span>
+                                    <div class="bar-progress-container">
+                                        <div class="bar-fill" id="vlm-match-rate" style="width: 80%;"></div>
+                                    </div>
+                                    <span class="detail-value" id="vlm-match-value">80%</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">유해/금지 성분 유무 (Allergens)</span>
+                                    <span class="detail-value text-red" id="vlm-allergen-status">달걀, 우유 검출</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">배식 정량 및 형태</span>
+                                    <span class="detail-value" id="vlm-portion-status">정량 배식 (96%)</span>
+                                </div>
+                            </div>
+
+                            <div class="vlm-reason-box">
+                                <h4><i class="fa-solid fa-comment-dots"></i> AI Vision 분석 사유</h4>
+                                <p id="vlm-analysis-reason">카메라 사진 분석 결과, 10시 방향에 계란말이 및 우측 하단에 우유가 포함된 요구르트병이 그대로 배치되어 있어 등록된 아동 '김민수'의 식판으로 적합하지 않습니다. 대체식(두부구이, 주스)으로의 교체를 요구하십시오.</p>
+                            </div>
+                            
+                            <div class="btn-row" id="vlm-action-footer">
+                                <!-- dynamic pass / reject buttons -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Report and ESG Tab -->
+            <section id="report-generator" class="tab-content">
+                <div class="content-row">
+                    <!-- Left: Report preview list -->
+                    <div class="panel-col glass-card flex-col-65">
+                        <div class="panel-header">
+                            <h2 class="panel-title"><i class="fa-solid fa-file-invoice"></i> 사회보장/가족 건강 데이터 증빙 센터</h2>
+                            <div class="report-tab-selectors">
+                                <button class="sub-tab-btn active" data-report="급식일지">급식 일지</button>
+                                <button class="sub-tab-btn" data-report="알레르기대장">집중 케어 대장</button>
+                                <button class="sub-tab-btn" data-report="대체식대장">대체 급식 관리대장</button>
+                            </div>
+                        </div>
+
+                        <!-- Report Render Area -->
+                        <div class="report-document-container" id="report-print-area">
+                            <div class="report-paper">
+                                <!-- Dynamic Document Header -->
+                                <div class="report-paper-header">
+                                    <h1 id="report-doc-title">급 식 일 지</h1>
+                                    <div class="report-meta-grid">
+                                        <div class="meta-cell"><strong>구분</strong>: <span id="r-facility-name">튼튼어린이집</span></div>
+                                        <div class="meta-cell"><strong>일자</strong>: <span id="r-date">2026년 06월 01일 (월)</span></div>
+                                        <div class="meta-cell"><strong>작성자</strong>: <span id="r-writer">박아름 사회복지사</span></div>
+                                        <div class="meta-cell"><strong>인증코드</strong>: <span>SSIS-2026-N45</span></div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Dynamic Document Body -->
+                                <div id="report-doc-content">
+                                    <!-- Inject via JS -->
+                                </div>
+
+                                <div class="report-paper-footer">
+                                    <div class="sign-area">
+                                        <p id="report-confirm-statement">위와 같이 취약계층 급식 관리 및 대체 배식이 올바르게 수행되었으며, 배식 전 VLM(Vision-Language Model) 검증 절차를 완료하였음을 확인합니다.</p>
+                                        <div class="sign-seal">
+                                            <span id="report-signer-name">확인자: 시설대표 박아름 (서명/인)</span>
+                                            <div class="seal-stamp">CareTable 검증</div>
+                                        </div>
+                                    </div>
+                                    <div class="report-footer-tag" id="report-footer-desc">한국사회보장정보원 사회복지시설평가 증빙 표준 서식 (SSIS 14-2)</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="btn-row justify-end padding-top-15">
+                            <button id="print-report-btn" class="primary-btn"><i class="fa-solid fa-print"></i> 공식 인쇄 (PDF/문서 저장)</button>
+                        </div>
+                    </div>
+
+                    <!-- Right: ESG Innovation statistics -->
+                    <div class="panel-col glass-card">
+                        <div class="panel-header">
+                            <h2 class="panel-title"><i class="fa-solid fa-leaf"></i> CareTable ESG 혁신 대시보드</h2>
+                        </div>
+                        
+                        <div class="esg-metric-grid">
+                            <div class="esg-metric-card">
+                                <div class="esg-val text-green" id="esg-co2">240.5kg</div>
+                                <div class="esg-lbl">누적 탄소(CO2) 절감량</div>
+                                <div class="esg-sub">종이 인쇄 감축 및 저탄소 식단 추천 효과</div>
+                            </div>
+                            <div class="esg-metric-card">
+                                <div class="esg-val text-blue" id="esg-time">84.2시간</div>
+                                <div class="esg-lbl" id="esg-saved-label">행정 시간 ➔ 직접 돌봄 시간 환원</div>
+                                <div class="esg-sub" id="esg-saved-sub">시설 평가 문서 자동화에 따른 절감</div>
+                            </div>
+                            <div class="esg-metric-card">
+                                <div class="esg-val text-yellow" id="esg-local">45%</div>
+                                <div class="esg-lbl">지역 농가 상생 재료 비중</div>
+                                <div class="esg-sub">지자체 및 인근 로컬 푸드 매칭율</div>
+                            </div>
+                        </div>
+
+                        <div class="esg-chart-box">
+                            <canvas id="esgChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <!-- OpenRouter API Config Modal -->
+    <div id="api-config-modal" class="modal hidden">
+        <div class="modal-content glass-card">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-robot"></i> OpenRouter AI 모델 설정</h3>
+                <span class="close-modal-btn" id="close-api-modal-btn">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="api-config-form">
+                    <p class="modal-info-text">OpenRouter 무료 API Key를 등록하여 실시간 AI 위험 감지 및 맞춤 대체 레시피 분석을 구동할 수 있습니다. 키가 없어도 시뮬레이션 모드로 작동합니다.</p>
+                    <div class="form-group">
+                        <label for="api-key-input">OpenRouter API Key (OPENROUTER_API)</label>
+                        <div class="password-input-wrapper">
+                            <input type="password" id="api-key-input" placeholder="sk-or-v1-...">
+                            <button type="button" id="toggle-key-visibility-btn"><i class="fa-solid fa-eye"></i></button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="api-model-select">사용할 AI 모델 (무료 모델)</label>
+                        <select id="api-model-select">
+                            <option value="deepseek/deepseek-v4-flash:free" selected>DeepSeek V4 Flash (무료)</option>
+                            <option value="qwen/qwen3-next-80b-a3b-instruct:free">Qwen 3 Next 80B (무료)</option>
+                            <option value="meta-llama/llama-3-8b-instruct:free">Llama 3 8B Instruct (무료)</option>
+                            <option value="meta-llama/llama-3.3-70b-instruct:free">Llama 3.3 70B Instruct (무료)</option>
+                            <option value="google/gemma-4-26b-a4b:free">Gemma 4 26B A4B (무료)</option>
+                            <option value="nvidia/llama-3.1-nemotron-70b-instruct:free">Llama 3.1 Nemotron 70B (무료)</option>
+                        </select>
+                    </div>
+                    <div class="btn-row justify-end">
+                        <button type="button" class="secondary-btn" id="reset-api-key-btn">키 삭제</button>
+                        <button type="submit" class="primary-btn">연동 완료</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Member Modal -->
+    <div id="add-member-modal" class="modal hidden">
+        <div class="modal-content glass-card">
+            <div class="modal-header">
+                <h3 id="modal-member-title"><i class="fa-solid fa-user-plus"></i> 신규 관리 대상자 등록</h3>
+                <span class="close-modal-btn" id="close-member-modal-btn">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="member-form">
+                    <div class="form-group">
+                        <label for="m-name">이름 (또는 별칭)</label>
+                        <input type="text" id="m-name" required placeholder="예: 김동현">
+                    </div>
+                    <div class="form-group">
+                        <label for="m-age">나이 (세)</label>
+                        <input type="number" id="m-age" required placeholder="예: 6">
+                    </div>
+                    <div class="form-group">
+                        <label for="m-gender">성별</label>
+                        <select id="m-gender">
+                            <option value="남">남성</option>
+                            <option value="여">여성</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="m-risk-type">위험 분류</label>
+                        <select id="m-risk-type">
+                            <option value="알레르기">알레르기 (식품성)</option>
+                            <option value="질환식">질환군 식이 (당뇨, 연하장애, 고혈압 등)</option>
+                            <option value="일반">해당 없음 (일반 급식군)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="m-detail">상세 요인 (식품명 또는 질환명)</label>
+                        <input type="text" id="m-detail" required placeholder="예: 대두, 땅콩, 당뇨병 2단계, 유당불내증">
+                    </div>
+                    <div class="form-group">
+                        <label for="m-instruction">맞춤 식사 조치 지침</label>
+                        <textarea id="m-instruction" required placeholder="예: 콩기름/간장 사용 전면 제한, 알레르기 발생 시 대체 급식 및 구급약 준비"></textarea>
+                    </div>
+                    <div class="btn-row justify-end">
+                        <button type="button" class="secondary-btn" id="cancel-member-btn">취소</button>
+                        <button type="submit" class="primary-btn">등록 완료</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script Source -->
+    <script src="app.js"></script>
+</body>
+</html>

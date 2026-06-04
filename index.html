@@ -1054,9 +1054,29 @@
                             <option value="일반">해당 없음 (일반 급식군)</option>
                         </select>
                     </div>
-                    <div class="form-group">
-                        <label for="m-detail">상세 요인 (식품명 또는 질환명)</label>
-                        <input type="text" id="m-detail" required placeholder="예: 대두, 땅콩, 당뇨병 2단계, 유당불내증">
+                    <!-- Hidden input for backward compatibility, updated dynamically by checkboxes -->
+                    <input type="hidden" id="m-detail" value="">
+                    
+                    <!-- Dynamic Allergen Checkbox Selector -->
+                    <div class="form-group" id="allergen-selector-group">
+                        <label style="display:flex; justify-content:space-between; align-items:center;">
+                            <span>알레르기 식품 선택 (다중 선택)</span>
+                            <span style="font-size:10px; color:var(--text-muted);">식약처 고시 22종 기준</span>
+                        </label>
+                        <div class="checkbox-grid" id="allergen-checkbox-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 8px; max-height: 160px; overflow-y: auto; padding: 10px; border: 1px solid var(--border-color); border-radius: 8px; background: rgba(0,0,0,0.02);">
+                            <!-- Appended dynamically via JS -->
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Disease Checkbox Selector -->
+                    <div class="form-group hidden" id="disease-selector-group">
+                        <label style="display:flex; justify-content:space-between; align-items:center;">
+                            <span>만성 기저질환 선택 (다중 선택)</span>
+                            <span style="font-size:10px; color:var(--text-muted);">연하단계 및 대사질환 7종</span>
+                        </label>
+                        <div class="checkbox-grid" id="disease-checkbox-grid" style="display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 8px; max-height: 160px; overflow-y: auto; padding: 10px; border: 1px solid var(--border-color); border-radius: 8px; background: rgba(0,0,0,0.02);">
+                            <!-- Appended dynamically via JS -->
+                        </div>
                     </div>
                     <div class="form-group">
                         <label for="m-instruction">맞춤 식사 조치 지침</label>

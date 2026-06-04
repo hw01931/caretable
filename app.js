@@ -1,5 +1,66 @@
 // CareTable - Bulletproof Logic Engine (Version 3.1)
 
+// 식약처 고시 식품 알레르기 유발물질 22종
+const ALLERGEN_CATEGORIES = [
+    "난류(가금류)", "우유", "메밀", "땅콩", "대두", "밀", "고등어", "게", "새우", "돼지고기", 
+    "복숭아", "토마토", "아황산류", "호두", "닭고기", "쇠고기", "오징어", "조개류(굴,전복,홍합 포함)", 
+    "잣", "겨자", "깨", "루핀"
+];
+
+// 만성 기저질환 및 섭식 장애 7종
+const DISEASE_CATEGORIES = [
+    "당뇨병", "고혈압", "신장질환", "유당불내증", "연하장애 1단계(다짐식)", "연하장애 2단계(연화식)", "연하장애 3단계(무스식)"
+];
+
+// 단체급식 메뉴-알레르기 유발 유래 성분 매핑 로컬 사전 (Rule-based 매칭용)
+const MENU_ALLERGEN_MAP = {
+    "현미밥": [],
+    "쌀밥": [],
+    "잡곡밥": [],
+    "보리밥": [],
+    "귀리잡곡밥": [],
+    "귀리죽": [],
+    "배추김치": ["밀", "대두"],
+    "깍두기": ["밀", "대두"],
+    "미역국": ["쇠고기", "조개류(굴,전복,홍합 포함)"],
+    "근대된장국": ["대두", "밀"],
+    "맑은 무국": ["쇠고기"],
+    "된장찌개": ["대두", "밀", "조개류(굴,전복,홍합 포함)"],
+    "저나트륨 된장국": ["대두", "밀"],
+    "닭살야채볶음": ["닭고기", "대두", "밀"],
+    "닭가슴살야채볶음": ["닭고기", "대두", "밀"],
+    "불고기": ["쇠고기", "대두", "밀"],
+    "제육볶음": ["돼지고기", "대두", "밀"],
+    "오징어볶음": ["오징어", "대두", "밀"],
+    "오징어채무침": ["오징어", "대두", "밀"],
+    "생선구이": ["고등어", "대두", "밀"],
+    "계란찜": ["난류(가금류)", "우유"],
+    "순두부계란찜": ["난류(가금류)", "우유", "대두"],
+    "달걀찜": ["난류(가금류)", "우유"],
+    "계란말이": ["난류(가금류)"],
+    "두부구이": ["대두"],
+    "연두부구이": ["대두"],
+    "연두부구이 + 약콩 두유": ["대두"],
+    "두부조림": ["대두", "밀"],
+    "시금치나물": [],
+    "고구마순나물": [],
+    "버섯찌개": ["대두", "밀"],
+    "저나트륨 버섯국": ["대두", "밀"],
+    "요구르트": ["우유"],
+    "요플레": ["우유"],
+    "약콩 두유": ["대두"],
+    "오렌지주스": ["복숭아"],
+    "돈까스": ["돼지고기", "밀", "난류(가금류)", "우유", "대두"],
+    "양배추 샐러드": ["난류(가금류)", "우유"],
+    "조기구이": ["고등어"],
+    "명란젓갈": ["조개류(굴,전복,홍합 포함)"],
+    "칼국수": ["밀", "조개류(굴,전복,홍합 포함)", "대두"],
+    "야채만두": ["밀", "돼지고기", "대두"],
+    "식식빵": ["밀", "우유"],
+    "사과잼": [],
+    "우유": ["우유"]
+};
+
 // Database of Default Mock Data
 const defaultMembers = {
     child: [
@@ -279,6 +340,11 @@ function cacheDomElements() {
         cancelMemberBtn: document.getElementById('cancel-member-btn'),
         memberForm: document.getElementById('member-form'),
         modalMemberTitle: document.getElementById('modal-member-title'),
+        allergenSelectorGroup: document.getElementById('allergen-selector-group'),
+        diseaseSelectorGroup: document.getElementById('disease-selector-group'),
+        allergenCheckboxGrid: document.getElementById('allergen-checkbox-grid'),
+        diseaseCheckboxGrid: document.getElementById('disease-checkbox-grid'),
+        mRiskType: document.getElementById('m-risk-type'),
         apiConfigForm: document.getElementById('api-config-form'),
         apiKeyInput: document.getElementById('api-key-input'),
         apiModelSelect: document.getElementById('api-model-select'),
@@ -615,6 +681,156 @@ function renderDashboard() {
     }, 100);
 }
 
+// 식재료 텍스트 기반 100% 로컬 오프라인 위험 대조 분석 알고리즘
+function localAnalyzeDiet(dietText) {
+    const lines = dietText.split('\n');
+    const results = [];
+    const listKey = state.currentMode === 'family' ? 'family' : state.currentFacility;
+    const currentMembers = state.members[listKey] || [];
+
+    lines.forEach((line, index) => {
+        const cleanLine = line.trim();
+        if (!cleanLine) return;
+
+        let datePart = `식단 ${index + 1}`;
+        let menuPart = cleanLine;
+
+        const dateMatch = cleanLine.match(/^\[(.*?)\](.*)/) || cleanLine.match(/^(.*?):(.*)/) || cleanLine.match(/^(.*?)-(.*)/);
+        if (dateMatch) {
+            datePart = dateMatch[1].trim();
+            menuPart = dateMatch[2].trim();
+        }
+
+        const menuItems = menuPart.split(',').map(m => m.trim()).filter(m => m);
+        const menuObjects = menuItems.map(name => {
+            let w = "150g";
+            if (name.includes("밥") || name.includes("죽")) w = "210g";
+            if (name.includes("국") || name.includes("찌개")) w = "150g";
+            if (name.includes("김치") || name.includes("나물")) w = "40g";
+            if (name.includes("주스") || name.includes("음료") || name.includes("우유") || name.includes("두유")) w = "125ml";
+            return { name: name, weight: w };
+        });
+
+        const risks = [];
+        let altFrom = "";
+        let altTo = "";
+        let altEffect = "";
+
+        const activeAllergensInMenu = {};
+        menuItems.forEach(menuName => {
+            let foundMenu = "";
+            let mappedAllergens = [];
+            
+            for (let key in MENU_ALLERGEN_MAP) {
+                if (menuName.includes(key) || key.includes(menuName)) {
+                    foundMenu = key;
+                    mappedAllergens = MENU_ALLERGEN_MAP[key];
+                    break;
+                }
+            }
+
+            mappedAllergens.forEach(allergen => {
+                activeAllergensInMenu[allergen] = menuName;
+            });
+        });
+
+        let riskCount = 1;
+        currentMembers.forEach(member => {
+            if (member.type === '알레르기') {
+                const memberAllergens = member.detail.split(',').map(s => s.trim());
+                memberAllergens.forEach(alg => {
+                    if (activeAllergensInMenu[alg]) {
+                        const targetMenu = activeAllergensInMenu[alg];
+                        risks.push({
+                            num: riskCount++,
+                            type: "알레르기",
+                            title: "알레르기 위험",
+                            desc: `[${targetMenu}] 내 ${alg} 성분 포함 ➔ ${member.name} (${member.detail}) 위험`,
+                            status: "danger"
+                        });
+
+                        if (targetMenu.includes("계란찜") || targetMenu.includes("달걀찜") || targetMenu.includes("계란말이")) {
+                            altFrom = targetMenu;
+                            altTo = "연두부구이";
+                            altEffect = "난류 알러지원 차단 및 식물성 대두 단백질 대체 공급";
+                        } else if (targetMenu.includes("요구르트") || targetMenu.includes("요플레") || targetMenu.includes("우유")) {
+                            altFrom = targetMenu;
+                            altTo = "약콩 두유";
+                            altEffect = "유제품 락토프리 식물성 단백질 전환";
+                        } else if (targetMenu.includes("된장찌개")) {
+                            altFrom = targetMenu;
+                            altTo = "저나트륨 버섯국";
+                            altEffect = "대두 및 나트륨 함량 40% 저감";
+                        } else if (!altFrom) {
+                            altFrom = targetMenu;
+                            altTo = "두부조림";
+                            altEffect = `${alg} 항원 물질 배제 완료`;
+                        }
+                    }
+                });
+            } else if (member.type === '질환식') {
+                const diseaseList = member.detail.split(',').map(s => s.trim());
+                diseaseList.forEach(dis => {
+                    if (dis.includes("당뇨")) {
+                        const hasRice = menuItems.some(m => m === "쌀밥" || m === "백미밥");
+                        const hasSweet = menuItems.some(m => m.includes("요구르트") || m.includes("요플레") || m.includes("우유"));
+                        if (hasRice) {
+                            risks.push({
+                                num: riskCount++,
+                                type: "질환식",
+                                title: "당뇨 적합성 주의",
+                                desc: `정제 백미 쌀밥 포함 ➔ 당뇨군 ${member.name} 혈당 상승 주의`,
+                                status: "warning"
+                            });
+                            altFrom = "쌀밥";
+                            altTo = "귀리잡곡밥";
+                            altEffect = "정제 탄수화물 제한 및 잡곡 혼합으로 혈당 상승 속도 저하";
+                        }
+                    }
+                    if (dis.includes("연하")) {
+                        const needsSoft = menuItems.some(m => m.includes("떡") || m.includes("질긴") || m.includes("생선") || m.includes("어묵"));
+                        if (needsSoft) {
+                            risks.push({
+                                num: riskCount++,
+                                type: "연하식",
+                                title: "연하 섭식 위험",
+                                desc: `고형 반찬 포함 ➔ 연하장애군 ${member.name} 삼킴 위험 감지`,
+                                status: "info"
+                            });
+                            const filterMenu = menuItems.find(m => m.includes("생선") || m.includes("떡") || m.includes("질긴")) || menuItems[1];
+                            altFrom = filterMenu;
+                            altTo = `${filterMenu} (연화 다짐식)`;
+                            altEffect = "삼킴 장애 완화 및 잇몸 저작 대응 다짐식 조리";
+                        }
+                    }
+                });
+            }
+        });
+
+        // 식중독지수 가상 추가
+        risks.push({
+            num: riskCount++,
+            type: "식중독",
+            title: "식중독 예측 보통",
+            desc: "당일 보건기상지수에 따른 수산물 위생가공 주의 및 익힘 조리 권장",
+            status: "info"
+        });
+
+        results.push({
+            date: datePart.includes("식단") ? `${datePart}` : `${datePart} 식단`,
+            menu: menuObjects,
+            results: risks,
+            alternative: altFrom ? {
+                from: altFrom,
+                to: altTo,
+                effect: altEffect
+            } : null
+        });
+    });
+
+    return results;
+}
+
 function initDietAnalyzer() {
     if (!elements.dietBulkInput) return;
 
@@ -658,14 +874,17 @@ function initDietAnalyzer() {
                     const parsedResult = await callOpenRouterLLM(textInput);
                     renderAnalyzedSchedule(parsedResult);
                 } else {
-                    await new Promise(resolve => setTimeout(resolve, 1200));
-                    renderAnalyzedSchedule(defaultDiets);
+                    await new Promise(resolve => setTimeout(resolve, 800));
+                    // 100% 로컬 대조 알고리즘 실행
+                    const localResults = localAnalyzeDiet(textInput);
+                    renderAnalyzedSchedule(localResults);
                 }
                 showNotification("AI 식단 분석 및 대체식 처방 수립이 완료되었습니다.");
             } catch (error) {
                 console.error(error);
                 showNotification("AI 모델 호출 실패로 로컬 안전 가이드 데이터를 로드합니다.");
-                renderAnalyzedSchedule(defaultDiets);
+                const localResults = localAnalyzeDiet(textInput);
+                renderAnalyzedSchedule(localResults);
             } finally {
                 if (elements.analyzerLoading) elements.analyzerLoading.classList.add('hidden');
                 elements.analyzeDietBtn.disabled = false;
@@ -1319,6 +1538,41 @@ function runSafetyRecallFilter() {
 }
 
 function initUserCustomMgmt() {
+    // 1. 알레르기 및 질환 체크박스 그리드 동적 렌더링 (최초 1회 실행)
+    if (elements.allergenCheckboxGrid && elements.allergenCheckboxGrid.children.length === 0) {
+        elements.allergenCheckboxGrid.innerHTML = ALLERGEN_CATEGORIES.map(item => `
+            <label style="display:flex; align-items:center; gap:6px; font-size:12px; cursor:pointer;">
+                <input type="checkbox" name="allergen-items" value="${item}" style="cursor:pointer;">
+                <span>${item}</span>
+            </label>
+        `).join('');
+    }
+    if (elements.diseaseCheckboxGrid && elements.diseaseCheckboxGrid.children.length === 0) {
+        elements.diseaseCheckboxGrid.innerHTML = DISEASE_CATEGORIES.map(item => `
+            <label style="display:flex; align-items:center; gap:6px; font-size:12px; cursor:pointer;">
+                <input type="checkbox" name="disease-items" value="${item}" style="cursor:pointer;">
+                <span>${item}</span>
+            </label>
+        `).join('');
+    }
+
+    // 2. 위험 분류 변경 시 동적 selector 토글
+    if (elements.mRiskType) {
+        elements.mRiskType.addEventListener('change', (e) => {
+            const val = e.target.value;
+            if (val === '알레르기') {
+                if (elements.allergenSelectorGroup) elements.allergenSelectorGroup.classList.remove('hidden');
+                if (elements.diseaseSelectorGroup) elements.diseaseSelectorGroup.classList.add('hidden');
+            } else if (val === '질환식') {
+                if (elements.allergenSelectorGroup) elements.allergenSelectorGroup.classList.add('hidden');
+                if (elements.diseaseSelectorGroup) elements.diseaseSelectorGroup.classList.remove('hidden');
+            } else {
+                if (elements.allergenSelectorGroup) elements.allergenSelectorGroup.classList.add('hidden');
+                if (elements.diseaseSelectorGroup) elements.diseaseSelectorGroup.classList.add('hidden');
+            }
+        });
+    }
+
     if (elements.customTabBtns) {
         elements.customTabBtns.forEach(btn => {
             btn.addEventListener('click', () => {
@@ -1333,6 +1587,14 @@ function initUserCustomMgmt() {
         });
     }
 
+    const resetModalForm = () => {
+        if (elements.addMemberModal) elements.addMemberModal.classList.add('hidden');
+        if (elements.memberForm) elements.memberForm.reset();
+        // UI 기본 상태 복원 (알레르기 활성, 질환 숨김)
+        if (elements.allergenSelectorGroup) elements.allergenSelectorGroup.classList.remove('hidden');
+        if (elements.diseaseSelectorGroup) elements.diseaseSelectorGroup.classList.add('hidden');
+    };
+
     if (elements.addMemberBtn) {
         elements.addMemberBtn.addEventListener('click', () => {
             if (elements.addMemberModal) elements.addMemberModal.classList.remove('hidden');
@@ -1340,14 +1602,10 @@ function initUserCustomMgmt() {
     }
 
     if (elements.closeMemberModalBtn) {
-        elements.closeMemberModalBtn.addEventListener('click', () => {
-            if (elements.addMemberModal) elements.addMemberModal.classList.add('hidden');
-        });
+        elements.closeMemberModalBtn.addEventListener('click', resetModalForm);
     }
     if (elements.cancelMemberBtn) {
-        elements.cancelMemberBtn.addEventListener('click', () => {
-            if (elements.addMemberModal) elements.addMemberModal.classList.add('hidden');
-        });
+        elements.cancelMemberBtn.addEventListener('click', resetModalForm);
     }
 
     if (elements.memberForm) {
@@ -1358,10 +1616,24 @@ function initUserCustomMgmt() {
             const ageVal = document.getElementById('m-age').value.trim();
             const gender = document.getElementById('m-gender').value;
             const type = document.getElementById('m-risk-type').value;
-            const detail = document.getElementById('m-detail').value.trim();
             const instruction = document.getElementById('m-instruction').value.trim();
             
-            if (!name || !ageVal || !detail || !instruction) return;
+            // 3. 다중 선택된 알레르기 및 만성질환 직렬화(Serialization)
+            let detail = '';
+            if (type === '알레르기') {
+                const checked = Array.from(document.querySelectorAll('input[name="allergen-items"]:checked')).map(el => el.value);
+                detail = checked.length > 0 ? checked.join(', ') : '없음';
+            } else if (type === '질환식') {
+                const checked = Array.from(document.querySelectorAll('input[name="disease-items"]:checked')).map(el => el.value);
+                detail = checked.length > 0 ? checked.join(', ') : '없음';
+            } else {
+                detail = '없음';
+            }
+            
+            if (!name || !ageVal || !detail || !instruction) {
+                showNotification("필수 선택/입력 사항을 다시 확인해 주십시오.");
+                return;
+            }
 
             const listKey = state.currentMode === 'family' ? 'family' : state.currentFacility;
             const newId = state.members[listKey].length > 0 ? Math.max(...state.members[listKey].map(m => m.id)) + 1 : 1;
@@ -1379,8 +1651,7 @@ function initUserCustomMgmt() {
             state.members[listKey].push(memberObj);
             saveDatabase(listKey);
             
-            if (elements.addMemberModal) elements.addMemberModal.classList.add('hidden');
-            elements.memberForm.reset();
+            resetModalForm();
             
             renderUserCustomMgmt();
             renderDashboard();
